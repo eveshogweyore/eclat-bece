@@ -130,12 +130,12 @@ export default function StudentDashboard() {
                             <p className="text-sm text-muted-foreground">{subject.questions} questions</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs px-2 py-1 rounded-full bg-primary-light text-primary font-medium">
-                            {subject.difficulty}
-                          </span>
-                          <Button variant="hero" size="sm">Start Practice</Button>
-                        </div>
+                         <div className="flex items-center gap-3">
+                           <span className="text-xs px-2 py-1 rounded-full bg-primary-light text-primary font-medium">
+                             {subject.difficulty}
+                           </span>
+                           <Button variant="hero" size="sm" onClick={() => navigate(`/quiz/${subject.name.toLowerCase()}`)}>Start Practice</Button>
+                         </div>
                       </div>
                     ))}
                   </TabsContent>
@@ -152,7 +152,7 @@ export default function StudentDashboard() {
                             <p className="text-sm text-muted-foreground">{topic.subject} • {topic.questions} questions</p>
                           </div>
                         </div>
-                        <Button variant="hero" size="sm">Start Practice</Button>
+                        <Button variant="hero" size="sm" onClick={() => navigate(`/quiz/${topic.name.toLowerCase()}`)}>Start Practice</Button>
                       </div>
                     ))}
                   </TabsContent>

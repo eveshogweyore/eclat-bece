@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo-dark.png";
+import logo from "@/assets/logo.png";
 
 interface NavigationProps {
   onLoginClick: () => void;
@@ -25,7 +25,7 @@ export const Navigation = ({ onLoginClick, onGetStartedClick }: NavigationProps)
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollToSection("hero")}>
-            <img src={logo} alt="Éclat Logo" className="h-10 w-auto" />
+            <img src={logo} alt="Éclat Logo" className="h-12 w-auto" />
           </div>
 
           {/* Desktop Navigation */}

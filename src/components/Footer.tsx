@@ -1,5 +1,5 @@
 import { Mail, Phone, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
-import logo from "@/assets/logo-dark.png";
+import logo from "@/assets/logo.png";
 
 export const Footer = () => {
   return (
@@ -8,7 +8,7 @@ export const Footer = () => {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Logo & Description */}
           <div className="md:col-span-2">
-            <img src={logo} alt="Éclat Logo" className="h-10 w-auto mb-4 brightness-0 invert" />
+            <img src={logo} alt="Éclat Logo" className="h-12 w-auto mb-4 brightness-0 invert" />
             <p className="text-background/80 max-w-md leading-relaxed">
               Éclat transforms exam preparation into an exciting competition. Join thousands of students learning smarter and winning rewards.
             </p>
