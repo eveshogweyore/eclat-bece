@@ -1,4 +1,5 @@
 import { School, Users, TrendingUp, AlertCircle, FileDown, Plus, LogOut, Settings, Trophy } from "lucide-react";
+import { CompetitionLeaderboards } from "@/components/CompetitionLeaderboards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -223,6 +224,11 @@ export default function SchoolDashboard() {
                   </CardContent>
                 </Card>
               </div>
+            </div>
+
+            {/* School-Wide Competition Leaderboards */}
+            <div className="mt-8 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+              <CompetitionLeaderboards />
             </div>
           </>
         ) : (

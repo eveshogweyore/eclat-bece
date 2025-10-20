@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BookOpen, Trophy, TrendingUp, Award, Target, Flame, LogOut, Settings, User } from "lucide-react";
+import { CompetitionLeaderboards } from "@/components/CompetitionLeaderboards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -160,37 +161,14 @@ export default function StudentDashboard() {
               </CardContent>
             </Card>
 
-            {/* Competition Section */}
-            <Card className="border-2 border-accent shadow-glow animate-scale-in" style={{ animationDelay: "0.1s" }}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground mb-1">Join this week's Challenge! 🏆</h3>
-                    <p className="text-sm text-muted-foreground">Compete with 2,847 students nationwide</p>
-                  </div>
-                  <Trophy className="text-accent" size={32} />
-                </div>
-                <Button variant="accent" className="w-full" size="lg">Enter Competition</Button>
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm font-semibold text-muted-foreground mb-3">Top 3 This Week</p>
-                  <div className="space-y-2">
-                    {[
-                      { name: "Oluwaseun A.", points: 1450, avatar: "🎓" },
-                      { name: "Amina K.", points: 1380, avatar: "📚" },
-                      { name: "Chidi O.", points: 1290, avatar: "⭐" },
-                    ].map((competitor, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{competitor.avatar}</span>
-                          <span className="text-sm font-medium">{competitor.name}</span>
-                        </div>
-                        <span className="text-sm font-bold text-primary">{competitor.points} pts</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Competition Leaderboards */}
+            <div className="animate-scale-in" style={{ animationDelay: "0.1s" }}>
+              <CompetitionLeaderboards 
+                showCurrentUserPosition={true}
+                currentUserName="Ada"
+                currentUserRanks={{ weekly: 45, monthly: 12, annual: 8 }}
+              />
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -239,19 +217,6 @@ export default function StudentDashboard() {
               </CardContent>
             </Card>
 
-            {/* Leaderboard Access */}
-            <Card className="border-2 border-primary animate-scale-in" style={{ animationDelay: "0.3s" }}>
-              <CardContent className="p-6 text-center">
-                <Trophy className="text-primary mx-auto mb-3" size={48} />
-                <h3 className="font-bold text-lg mb-2">Monthly Leaderboard</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Top 3 students win cash prizes every month! 💰
-                </p>
-                <Button variant="hero" className="w-full" onClick={() => navigate("/#leaderboard")}>
-                  View Full Leaderboard
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Users, TrendingUp, BookOpen, Plus, FileText, LogOut, Settings } from "lucide-react";
+import { CompetitionLeaderboards } from "@/components/CompetitionLeaderboards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -166,8 +167,17 @@ export default function ParentDashboard() {
           ))}
         </div>
 
+        {/* Competition Leaderboards - Ward's Position */}
+        <div className="mt-8 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+          <CompetitionLeaderboards 
+            showCurrentUserPosition={true}
+            currentUserName="Ada"
+            currentUserRanks={{ weekly: 45, monthly: 12, annual: 8 }}
+          />
+        </div>
+
         {/* Support Section */}
-        <Card className="mt-8 border-2 border-primary animate-fade-in" style={{ animationDelay: "0.3s" }}>
+        <Card className="mt-8 border-2 border-primary animate-fade-in" style={{ animationDelay: "0.4s" }}>
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">

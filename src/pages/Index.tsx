@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
@@ -11,8 +12,10 @@ import { RoleSelectionDialog } from "@/components/RoleSelectionDialog";
 const Index = () => {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
 
+  const navigate = useNavigate();
+  
   const handleAuthAction = () => {
-    setRoleDialogOpen(true);
+    navigate("/auth");
   };
 
   const scrollToLeaderboard = () => {
@@ -31,7 +34,6 @@ const Index = () => {
       <About />
       <Pricing onGetStartedClick={handleAuthAction} />
       <Footer />
-      <RoleSelectionDialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen} />
     </div>
   );
 };
