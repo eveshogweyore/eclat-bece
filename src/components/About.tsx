@@ -1,4 +1,4 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, BookOpen, TrendingUp, Target, Award, Globe, Smartphone } from "lucide-react";
 
 export const About = () => {
   const steps = [
@@ -57,22 +57,24 @@ export const About = () => {
           </div>
 
           {/* Benefits Grid */}
-          <div className="bg-primary-light/50 rounded-2xl p-8 animate-scale-in" style={{ animationDelay: "0.3s" }}>
-            <h3 className="text-2xl font-bold text-foreground mb-6 text-center">
+          <div className="bg-gradient-to-br from-primary-light/60 to-accent-light/40 rounded-2xl p-8 animate-scale-in" style={{ animationDelay: "0.3s" }}>
+            <h3 className="text-2xl font-bold text-foreground mb-8 text-center">
               Why Students Choose Éclat
             </h3>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
-                "Authentic SAT practice questions",
-                "Win real cash prizes monthly",
-                "Track your score improvements",
-                "Compete with students worldwide",
-                "Personalized study insights",
-                "Mobile & desktop optimized",
+                { icon: BookOpen, text: "Authentic SAT practice questions", color: "text-primary" },
+                { icon: Award, text: "Win real cash prizes monthly", color: "text-accent" },
+                { icon: TrendingUp, text: "Track your score improvements", color: "text-primary" },
+                { icon: Globe, text: "Compete with students worldwide", color: "text-accent" },
+                { icon: Target, text: "Personalized study insights", color: "text-primary" },
+                { icon: Smartphone, text: "Mobile & desktop optimized", color: "text-accent" },
               ].map((benefit, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <CheckCircle2 className="text-primary flex-shrink-0" size={20} />
-                  <span className="text-foreground">{benefit}</span>
+                <div key={index} className="flex items-start gap-3 p-4 bg-background/60 rounded-lg hover:bg-background/80 transition-all hover:shadow-soft">
+                  <div className={`${benefit.color} mt-1 flex-shrink-0`}>
+                    <benefit.icon size={24} />
+                  </div>
+                  <span className="text-foreground font-medium">{benefit.text}</span>
                 </div>
               ))}
             </div>

@@ -1,5 +1,6 @@
 import { Trophy, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import heroStudy from "@/assets/hero-study.jpg";
 
 interface HeroProps {
   onGetStartedClick: () => void;
@@ -8,8 +9,18 @@ interface HeroProps {
 
 export const Hero = ({ onGetStartedClick, onViewLeaderboardClick }: HeroProps) => {
   return (
-    <section id="hero" className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-background via-primary-light to-background">
-      <div className="container mx-auto">
+    <section id="hero" className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={heroStudy} 
+          alt="Students studying" 
+          className="w-full h-full object-cover opacity-20 dark:opacity-10"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-background/95 via-primary-light/90 to-background/95"></div>
+      </div>
+
+      <div className="container mx-auto relative z-10">
         <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent-light rounded-full text-accent font-semibold animate-scale-in">

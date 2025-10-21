@@ -14,19 +14,18 @@ export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState("subject");
 
   const subjects = [
-    { name: "Mathematics", icon: "📐", difficulty: "Challenging", questions: 1250 },
-    { name: "English", icon: "📚", difficulty: "Moderate", questions: 980 },
-    { name: "Quantitative", icon: "🔢", difficulty: "Challenging", questions: 1100 },
-    { name: "Verbal Reasoning", icon: "💭", difficulty: "Moderate", questions: 850 },
-    { name: "General Knowledge", icon: "🌍", difficulty: "Easy", questions: 1500 },
-    { name: "Science", icon: "🔬", difficulty: "Moderate", questions: 920 },
+    { name: "SAT Math", icon: "📐", difficulty: "Challenging", questions: 1850 },
+    { name: "SAT Reading & Writing", icon: "📚", difficulty: "Moderate", questions: 1620 },
+    { name: "SAT Essay (Optional)", icon: "✍️", difficulty: "Advanced", questions: 180 },
   ];
 
   const topics = [
-    { name: "Algebra", subject: "Math", icon: "➗", questions: 340 },
-    { name: "Grammar", subject: "English", icon: "✍️", questions: 280 },
-    { name: "Data Interpretation", subject: "Quantitative", icon: "📊", questions: 225 },
-    { name: "Synonyms & Antonyms", subject: "Verbal", icon: "📖", questions: 190 },
+    { name: "Algebra & Functions", subject: "SAT Math", icon: "➗", questions: 420 },
+    { name: "Evidence-Based Reading", subject: "Reading", icon: "📖", questions: 380 },
+    { name: "Data Analysis", subject: "SAT Math", icon: "📊", questions: 325 },
+    { name: "Grammar & Punctuation", subject: "Writing", icon: "✍️", questions: 290 },
+    { name: "Geometry & Trigonometry", subject: "SAT Math", icon: "📐", questions: 285 },
+    { name: "Vocabulary in Context", subject: "Reading", icon: "💭", questions: 245 },
   ];
 
   const badges = [
@@ -138,7 +137,7 @@ export default function StudentDashboard() {
                            <span className="text-xs px-2 py-1 rounded-full bg-primary-light text-primary font-medium">
                              {subject.difficulty}
                            </span>
-                           <Button variant="hero" size="sm" onClick={() => navigate(`/quiz/${subject.name.toLowerCase()}`)}>Start Practice</Button>
+                           <Button variant="hero" size="sm" onClick={() => navigate("/quiz")}>Start Practice</Button>
                          </div>
                       </div>
                     ))}
@@ -156,7 +155,7 @@ export default function StudentDashboard() {
                             <p className="text-sm text-muted-foreground">{topic.subject} • {topic.questions} questions</p>
                           </div>
                         </div>
-                        <Button variant="hero" size="sm" onClick={() => navigate(`/quiz/${topic.name.toLowerCase()}`)}>Start Practice</Button>
+                        <Button variant="hero" size="sm" onClick={() => navigate("/quiz")}>Start Practice</Button>
                       </div>
                     ))}
                   </TabsContent>

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Download, Calendar } from "lucide-react";
+import { TrendingUp, Download, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 
 interface SubjectProgress {
   subject: string;
@@ -25,7 +26,7 @@ export const ProgressReport = ({
   totalQuestionsCompleted = 327,
   overallAccuracy = 82,
 }: ProgressReportProps) => {
-  
+  const [expanded, setExpanded] = useState(false);
   const totalScore = subjectProgress.reduce((sum, item) => sum + item.currentScore, 0);
   
   return (
@@ -39,10 +40,19 @@ export const ProgressReport = ({
             </CardTitle>
             <CardDescription>Your SAT prep journey at a glance</CardDescription>
           </div>
-          <Button variant="outline" size="sm">
-            <Download size={16} />
-            Export PDF
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm">
+              <Download size={16} />
+              Export PDF
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -108,6 +118,46 @@ export const ProgressReport = ({
             Your reading and writing scores are strong!
           </p>
         </div>
+
+        {/* Expanded Details */}
+        {expanded && (
+          <div className="mt-6 pt-6 border-t space-y-4 animate-fade-in">
+            <h4 className="font-semibold text-foreground mb-3">Study Analytics</h4>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">21</div>
+                <div className="text-xs text-muted-foreground">Day Streak</div>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold text-primary">48</div>
+                <div className="text-xs text-muted-foreground">Total Hours</div>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold text-accent">+180</div>
+                <div className="text-xs text-muted-foreground">Score Gain</div>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold text-primary">92%</div>
+                <div className="text-xs text-muted-foreground">Consistency</div>
+              </div>
+            </div>
+
+            <div className="space-y-2 mt-4">
+              <h5 className="text-sm font-semibold text-muted-foreground">Strengths & Weaknesses</h5>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-xs font-semibold text-green-700 dark:text-green-400 mb-1">Strong Areas</p>
+                  <p className="text-xs">Vocabulary, Grammar, Geometry</p>
+                </div>
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-1">Needs Improvement</p>
+                  <p className="text-xs">Algebra II, Data Analysis</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

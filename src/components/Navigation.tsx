@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
+import { useNavigate } from "react-router-dom";
 
 interface NavigationProps {
   onLoginClick: () => void;
@@ -10,6 +11,7 @@ interface NavigationProps {
 
 export const Navigation = ({ onLoginClick, onGetStartedClick }: NavigationProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -24,7 +26,13 @@ export const Navigation = ({ onLoginClick, onGetStartedClick }: NavigationProps)
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollToSection("hero")}>
+          <div 
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" 
+            onClick={() => {
+              navigate("/");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
             <img src={logo} alt="Éclat Logo" className="h-12 w-auto" />
           </div>
 

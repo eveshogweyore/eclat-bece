@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, BookOpen, Target } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Assignment {
   title: string;
@@ -46,8 +47,17 @@ export const PracticeAssignment = ({
       score: 89,
     },
   ],
-  onStartAssignment = () => {}
+  onStartAssignment
 }: PracticeAssignmentProps) => {
+  const navigate = useNavigate();
+
+  const handleStart = (index: number) => {
+    if (onStartAssignment) {
+      onStartAssignment(index);
+    } else {
+      navigate("/quiz");
+    }
+  };
   
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -105,7 +115,7 @@ export const PracticeAssignment = ({
               <Button
                 variant={assignment.completed ? "outline" : "hero"}
                 size="sm"
-                onClick={() => onStartAssignment(index)}
+                onClick={() => handleStart(index)}
               >
                 {assignment.completed ? "Review" : "Start"}
               </Button>
