@@ -4,10 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { StudentReportDialog } from "@/components/StudentReportDialog";
+import { ClassAnalyticsDialog } from "@/components/ClassAnalyticsDialog";
 
 export default function SchoolDashboard() {
   const navigate = useNavigate();
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<{ name: string; class: string } | null>(null);
 
   const overviewStats = {
     totalClasses: 12,
@@ -169,7 +174,7 @@ export default function SchoolDashboard() {
                             </Button>
                             <Button variant="default" size="sm" onClick={(e) => {
                               e.stopPropagation();
-                              navigate("/quiz");
+                              setAnalyticsOpen(true);
                             }}>
                               View Analytics
                             </Button>
@@ -300,7 +305,16 @@ export default function SchoolDashboard() {
                             <p className="text-sm text-muted-foreground">Progress</p>
                             <p className="text-lg font-bold text-accent">{student.progress}%</p>
                           </div>
-                          <Button variant="outline" size="sm">View Report</Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedStudent({ name: student.name, class: selectedClass || "" });
+                              setReportOpen(true);
+                            }}
+                          >
+                            View Details
+                          </Button>
                         </div>
                     </div>
                   ))}
@@ -310,6 +324,21 @@ export default function SchoolDashboard() {
           </>
         )}
       </div>
+
+      {/* Dialogs */}
+      {selectedStudent && (
+        <StudentReportDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          studentName={selectedStudent.name}
+          studentClass={selectedStudent.class}
+        />
+      )}
+      <ClassAnalyticsDialog
+        open={analyticsOpen}
+        onOpenChange={setAnalyticsOpen}
+        className={selectedClass || ""}
+      />
     </div>
   );
 }

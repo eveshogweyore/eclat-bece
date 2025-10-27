@@ -1,11 +1,17 @@
+import { useState } from "react";
 import { Users, TrendingUp, BookOpen, Plus, FileText, LogOut, Settings } from "lucide-react";
 import { CompetitionLeaderboards } from "@/components/CompetitionLeaderboards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { StudentReportDialog } from "@/components/StudentReportDialog";
+import { AssignPracticeDialog } from "@/components/AssignPracticeDialog";
 
 export default function ParentDashboard() {
   const navigate = useNavigate();
+  const [reportOpen, setReportOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [selectedChild, setSelectedChild] = useState<{ name: string; class: string; avatar: string } | null>(null);
 
   const children = [
     {
@@ -100,14 +106,20 @@ export default function ParentDashboard() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate("/quiz")}
+                      onClick={() => {
+                        setSelectedChild({ name: child.name, class: child.class, avatar: child.avatar });
+                        setReportOpen(true);
+                      }}
                     >
                       View Report
                     </Button>
                     <Button 
                       variant="hero" 
                       size="sm"
-                      onClick={() => navigate("/quiz")}
+                      onClick={() => {
+                        setSelectedChild({ name: child.name, class: child.class, avatar: child.avatar });
+                        setAssignOpen(true);
+                      }}
                     >
                       Assign Practice
                     </Button>
@@ -167,7 +179,8 @@ export default function ParentDashboard() {
                       {child.weakAreas.map((area, idx) => (
                         <div
                           key={idx}
-                          className="px-3 py-2 bg-accent-light border border-accent rounded-lg text-sm font-medium"
+                          className="px-3 py-2 bg-accent-light border border-accent rounded-lg text-sm font-medium cursor-pointer hover:shadow-hover transition-all"
+                          onClick={() => navigate(`/subject-analytics?subject=${encodeURIComponent(area)}`)}
                         >
                           {area}
                         </div>
@@ -208,6 +221,24 @@ export default function ParentDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialogs */}
+      {selectedChild && (
+        <>
+          <StudentReportDialog
+            open={reportOpen}
+            onOpenChange={setReportOpen}
+            studentName={selectedChild.name}
+            studentClass={selectedChild.class}
+            avatar={selectedChild.avatar}
+          />
+          <AssignPracticeDialog
+            open={assignOpen}
+            onOpenChange={setAssignOpen}
+            childName={selectedChild.name}
+          />
+        </>
+      )}
     </div>
   );
 }
