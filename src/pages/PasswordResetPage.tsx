@@ -8,6 +8,7 @@ import { BookOpen, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { getSafeErrorMessage } from "@/lib/errorUtils";
 
 const resetEmailSchema = z.object({
   email: z.string().trim().email("Invalid email address").max(255),
@@ -48,7 +49,7 @@ export default function PasswordResetPage() {
       if (error) {
         toast({
           title: "Error",
-          description: error.message,
+          description: getSafeErrorMessage(error),
           variant: "destructive",
         });
         return;
@@ -96,7 +97,7 @@ export default function PasswordResetPage() {
       if (error) {
         toast({
           title: "Error",
-          description: error.message,
+          description: getSafeErrorMessage(error),
           variant: "destructive",
         });
         return;

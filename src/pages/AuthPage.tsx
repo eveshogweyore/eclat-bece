@@ -10,6 +10,7 @@ import { BookOpen, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { getSafeErrorMessage } from "@/lib/errorUtils";
 
 // Validation schemas
 const loginSchema = z.object({
@@ -66,7 +67,7 @@ export default function AuthPage() {
       if (error) {
         toast({
           title: "Login Failed",
-          description: error.message,
+          description: getSafeErrorMessage(error),
           variant: "destructive",
         });
         return;
@@ -145,7 +146,7 @@ export default function AuthPage() {
       if (error) {
         toast({
           title: "Signup Failed",
-          description: error.message,
+          description: getSafeErrorMessage(error),
           variant: "destructive",
         });
         return;
@@ -244,7 +245,7 @@ export default function AuthPage() {
       } else {
         toast({
           title: "Error",
-          description: error.message || "An unexpected error occurred",
+          description: getSafeErrorMessage(error),
           variant: "destructive",
         });
       }

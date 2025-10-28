@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { BookOpen, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getSafeErrorMessage } from "@/lib/errorUtils";
 
 export default function EmailVerificationPage() {
   const navigate = useNavigate();
@@ -92,10 +93,9 @@ export default function EmailVerificationPage() {
         navigate("/dashboard/school");
       }
     } catch (error: any) {
-      console.error("Verification error:", error);
       toast({
         title: "Verification Failed",
-        description: error.message || "An error occurred during verification.",
+        description: getSafeErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -147,10 +147,9 @@ export default function EmailVerificationPage() {
         description: "A new verification code has been sent to your email.",
       });
     } catch (error: any) {
-      console.error("Resend error:", error);
       toast({
         title: "Resend Failed",
-        description: error.message || "Failed to resend verification code.",
+        description: getSafeErrorMessage(error),
         variant: "destructive",
       });
     } finally {

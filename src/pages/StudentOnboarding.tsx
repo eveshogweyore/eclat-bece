@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BookOpen, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getSafeErrorMessage } from "@/lib/errorUtils";
 
 export default function StudentOnboarding() {
   const navigate = useNavigate();
@@ -88,10 +89,9 @@ export default function StudentOnboarding() {
 
       navigate("/dashboard/student");
     } catch (error: any) {
-      console.error("Onboarding error:", error);
       toast({
         title: "Setup Failed",
-        description: error.message || "An error occurred during setup.",
+        description: getSafeErrorMessage(error),
         variant: "destructive",
       });
     } finally {

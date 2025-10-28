@@ -1,8 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+// Validation schema for request body
+const verificationEmailSchema = z.object({
+  email: z.string().email().max(255),
+  code: z.string().length(6).regex(/^[A-Z0-9]+$/, "Code must contain only uppercase letters and numbers"),
+});
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,7 +54,25 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { email, code }: VerificationEmailRequest = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate request body
+    const validationResult = verificationEmailSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      console.error("Validation failed:", validationResult.error);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid request data",
+          details: validationResult.error.errors.map(e => e.message)
+        }), 
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const { email, code } = validationResult.data;
 
     // Verify the email matches the authenticated user's email
     if (email !== user.email) {
