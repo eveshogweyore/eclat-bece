@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { StudentReportDialog } from "@/components/StudentReportDialog";
 import { ClassAnalyticsDialog } from "@/components/ClassAnalyticsDialog";
 
 export default function SchoolDashboard() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
@@ -70,10 +72,10 @@ export default function SchoolDashboard() {
             onClick={() => navigate("/")}
           />
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+            <Button variant="ghost" size="icon">
               <Settings size={20} />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+            <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut size={20} />
             </Button>
           </div>

@@ -4,11 +4,13 @@ import { CompetitionLeaderboards } from "@/components/CompetitionLeaderboards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { StudentReportDialog } from "@/components/StudentReportDialog";
 import { AssignPracticeDialog } from "@/components/AssignPracticeDialog";
 
 export default function ParentDashboard() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [reportOpen, setReportOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<{ name: string; class: string; avatar: string } | null>(null);
@@ -54,10 +56,10 @@ export default function ParentDashboard() {
             onClick={() => navigate("/")}
           />
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+            <Button variant="ghost" size="icon">
               <Settings size={20} />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+            <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut size={20} />
             </Button>
           </div>
