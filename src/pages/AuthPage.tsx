@@ -223,10 +223,9 @@ export default function AuthPage() {
       
       // Store verification code in database
       const { error: codeError } = await supabase
-        .from("email_verifications")
+        .from("email_verification_codes")
         .insert({
           user_id: data.user.id,
-          email: validated.email,
           code: verificationCode,
           expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
         });
