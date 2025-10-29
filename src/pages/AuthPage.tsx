@@ -262,7 +262,7 @@ export default function AuthPage() {
         description: "Please check your email to verify your account.",
       });
 
-      navigate("/verify-email");
+      navigate(`/verify-email?email=${encodeURIComponent(validated.email)}&role=${role}`);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({
