@@ -1,8 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+// Validate request body
+const requestSchema = z.object({
+  user_id: z.string().uuid(),
+});
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,48 +23,28 @@ serve(async (req) => {
   }
 
   try {
-    // Get authenticated user from JWT
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+    const json = await req.json().catch(() => ({}));
+    const parsed = requestSchema.safeParse(json);
+    if (!parsed.success) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request", details: parsed.error.flatten() }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
-    // Create client with service role for database operations
-    const supabaseAdmin = createClient(
+    const { user_id } = parsed.data;
+
+    // Use service role to securely access database
+    const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Create client with user's token to verify auth
-    const supabaseUser = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    );
-
-    // Get the authenticated user
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
-    
-    if (userError || !user) {
-      console.error("User authentication failed", userError);
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
     // Fetch the user's email from profiles
-    const { data: profile, error: profileErr } = await supabaseAdmin
+    const { data: profile, error: profileErr } = await supabase
       .from("profiles")
       .select("email")
-      .eq("id", user.id)
+      .eq("id", user_id)
       .maybeSingle();
 
     if (profileErr || !profile?.email) {
@@ -76,10 +62,10 @@ serve(async (req) => {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Insert the code into the database using service role
-    const { error: insertError } = await supabaseAdmin
+    const { error: insertError } = await supabase
       .from("email_verification_codes")
       .insert({
-        user_id: user.id,
+        user_id: user_id,
         code: code,
         expires_at: expiresAt.toISOString(),
       });

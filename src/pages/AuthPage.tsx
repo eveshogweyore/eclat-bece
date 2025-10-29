@@ -220,7 +220,10 @@ export default function AuthPage() {
 
       // Send verification email via edge function (it will generate and store the code)
       const { error: emailError } = await supabase.functions.invoke(
-        "send-verification-email"
+        "send-verification-email",
+        {
+          body: { user_id: data.user.id },
+        }
       );
 
       if (emailError) {
