@@ -96,16 +96,21 @@ export default function AuthPage() {
 
       if (!userRole) {
         // Attempt to provision role and base records server-side (idempotent)
-        const { error: provisionError } = await supabase.functions.invoke("provision-user");
-        if (provisionError) {
-          console.warn("Provision user error:", provisionError);
-        } else {
-          const { data: roleData2 } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", data.user.id)
-            .maybeSingle();
-          userRole = roleData2?.role as string | undefined;
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession?.access_token) {
+          const { error: provisionError } = await supabase.functions.invoke("provision-user", {
+            headers: { Authorization: `Bearer ${currentSession.access_token}` },
+          });
+          if (provisionError) {
+            console.warn("Provision user error:", provisionError);
+          } else {
+            const { data: roleData2 } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", data.user.id)
+              .maybeSingle();
+            userRole = roleData2?.role as string | undefined;
+          }
         }
       }
 

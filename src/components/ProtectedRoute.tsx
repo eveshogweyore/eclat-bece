@@ -80,7 +80,12 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
 
         if (!roleData) {
           // Try to provision user roles/records (idempotent)
-          await supabase.functions.invoke("provision-user");
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          if (currentSession?.access_token) {
+            await supabase.functions.invoke("provision-user", {
+              headers: { Authorization: `Bearer ${currentSession.access_token}` },
+            });
+          }
 
           // Re-check actual role after provisioning
           const { data: userRole } = await supabase
