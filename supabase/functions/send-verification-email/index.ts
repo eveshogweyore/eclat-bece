@@ -5,10 +5,9 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-// Validation schema for request body
-const verificationEmailSchema = z.object({
-  email: z.string().email().max(255),
-  code: z.string().length(6).regex(/^[A-Z0-9]+$/, "Code must contain only uppercase letters and numbers"),
+// Validate request body
+const requestSchema = z.object({
+  code: z.string().length(6).regex(/^[A-Z0-9]+$/, "Code must be 6 characters, A-Z and 0-9"),
 });
 
 const corsHeaders = {
@@ -17,130 +16,110 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface VerificationEmailRequest {
-  email: string;
-  code: string;
-}
-
-const handler = async (req: Request): Promise<Response> => {
+serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Authenticate the request
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      console.error("Missing authorization header");
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    
-    if (authError || !user) {
-      console.error("Authentication failed:", authError);
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const requestBody = await req.json();
-    
-    // Validate request body
-    const validationResult = verificationEmailSchema.safeParse(requestBody);
-    if (!validationResult.success) {
-      console.error("Validation failed:", validationResult.error);
+    const json = await req.json().catch(() => ({}));
+    const parsed = requestSchema.safeParse(json);
+    if (!parsed.success) {
       return new Response(
-        JSON.stringify({ 
-          error: "Invalid request data",
-          details: validationResult.error.errors.map(e => e.message)
-        }), 
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ error: "Invalid request", details: parsed.error.flatten() }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const { email, code } = validationResult.data;
+    const { code } = parsed.data;
 
-    // Verify the email matches the authenticated user's email
-    if (email !== user.email) {
-      console.error("Email mismatch - attempted to send to different email");
-      return new Response(JSON.stringify({ error: "Email mismatch" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Use service role to securely validate the code and resolve the recipient email
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Find matching, unexpired, unverified code
+    const { data: codeRow, error: codeErr } = await supabase
+      .from("email_verification_codes")
+      .select("id, user_id, expires_at, verified")
+      .eq("code", code)
+      .eq("verified", false)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (codeErr || !codeRow) {
+      console.error("Invalid or expired code", codeErr);
+      return new Response(JSON.stringify({ error: "Invalid or expired code" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    console.log("Sending verification email to:", email);
+    // Fetch the user's email from profiles
+    const { data: profile, error: profileErr } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", codeRow.user_id)
+      .maybeSingle();
 
+    if (profileErr || !profile?.email) {
+      console.error("Profile not found for user", profileErr);
+      return new Response(JSON.stringify({ error: "Profile not found" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const toEmail = profile.email;
+
+    // Send the email via Resend
     const emailResponse = await resend.emails.send({
-      from: "QuizMaster <onboarding@resend.dev>",
-      to: [email],
-      subject: "Verify Your Email - QuizMaster",
+      from: "Éclat <onboarding@resend.dev>",
+      to: [toEmail],
+      subject: "Your Éclat verification code",
       html: `
         <!DOCTYPE html>
         <html>
           <head>
+            <meta charset="utf-8" />
+            <meta http-equiv="x-ua-compatible" content="ie=edge" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>Verify your email</title>
             <style>
-              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; }
-              .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
-              .header { text-align: center; margin-bottom: 30px; }
-              .code-box { background: #f4f4f4; border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0; }
-              .code { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333; font-family: 'Courier New', monospace; }
-              .footer { text-align: center; color: #666; font-size: 14px; margin-top: 40px; }
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
+              .container { max-width: 600px; margin: 0 auto; padding: 32px 16px; }
+              .code-box { background: #f7f7f7; border: 1px solid #e5e5e5; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0; }
+              .code { font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #111827; font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; }
+              .muted { color: #6b7280; font-size: 14px; }
             </style>
           </head>
           <body>
             <div class="container">
-              <div class="header">
-                <h1 style="color: #333; margin: 0;">Verify Your Email</h1>
-              </div>
-              <p>Welcome to QuizMaster! Please use the verification code below to complete your registration:</p>
-              <div class="code-box">
-                <div class="code">${code}</div>
-              </div>
-              <p style="color: #666;">This code will expire in 10 minutes.</p>
-              <p style="color: #666;">If you didn't request this code, please ignore this email.</p>
-              <div class="footer">
-                <p>© ${new Date().getFullYear()} QuizMaster. All rights reserved.</p>
-              </div>
+              <h1>Verify your email</h1>
+              <p>Welcome to Éclat! Use the code below to verify your email address.</p>
+              <div class="code-box"><div class="code">${code}</div></div>
+              <p class="muted">This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.</p>
             </div>
           </body>
         </html>
       `,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Verification email sent", emailResponse);
 
-    return new Response(JSON.stringify(emailResponse), {
+    return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: any) {
-    console.error("Error in send-verification-email function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+  } catch (err) {
+    console.error("send-verification-email error", err);
+    return new Response(JSON.stringify({ error: "Internal error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
-};
-
-serve(handler);
+});

@@ -136,7 +136,7 @@ export default function EmailVerificationPage() {
       const { error: emailError } = await supabase.functions.invoke(
         "send-verification-email",
         {
-          body: { email, code: newCode },
+          body: { code: newCode },
         }
       );
 

@@ -234,27 +234,18 @@ export default function AuthPage() {
         console.error("Error storing verification code:", codeError);
       }
 
-      // Get fresh session for edge function call
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      // Send verification email with proper authentication
-      if (sessionData.session) {
-        const { error: emailError } = await supabase.functions.invoke(
-          "send-verification-email",
-          {
-            body: { 
-              email: validated.email,
-              code: verificationCode 
-            },
-            headers: {
-              Authorization: `Bearer ${sessionData.session.access_token}`
-            }
+      // Send verification email via Edge Function (no auth required)
+      const { error: emailError } = await supabase.functions.invoke(
+        "send-verification-email",
+        {
+          body: { 
+            code: verificationCode 
           }
-        );
-
-        if (emailError) {
-          console.error("Error sending verification email:", emailError);
         }
+      );
+
+      if (emailError) {
+        console.error("Error sending verification email:", emailError);
       }
 
       toast({
