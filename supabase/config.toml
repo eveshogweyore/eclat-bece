@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.provision-user]
 verify_jwt = false
+
+[functions.populate-quiz-data]
+verify_jwt = false

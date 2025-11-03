@@ -92,6 +92,77 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_options: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_correct: boolean | null
+          option_text: string
+          question_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_correct?: boolean | null
+          option_text: string
+          question_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_correct?: boolean | null
+          option_text?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          correct_answer: string
+          created_at: string | null
+          difficulty: string | null
+          explanation: string | null
+          id: string
+          question_text: string
+          subject: string
+          topic: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string | null
+          difficulty?: string | null
+          explanation?: string | null
+          id?: string
+          question_text: string
+          subject: string
+          topic?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string | null
+          difficulty?: string | null
+          explanation?: string | null
+          id?: string
+          question_text?: string
+          subject?: string
+          topic?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       schools: {
         Row: {
           created_at: string

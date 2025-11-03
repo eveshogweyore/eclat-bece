@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuizQuestionsBySubject } from "@/hooks/useQuizQuestions";
 import logo from "@/assets/logo.png";
 
 export default function StudentDashboard() {
@@ -16,6 +17,7 @@ export default function StudentDashboard() {
   const { signOut, user } = useAuth();
   const [activeTab, setActiveTab] = useState("subject");
   const [userName, setUserName] = useState("Student");
+  const { data: subjectCounts } = useQuizQuestionsBySubject();
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -37,10 +39,10 @@ export default function StudentDashboard() {
   }, [user]);
 
   const subjects = [
-    { name: "Mathematics", icon: "📐", difficulty: "Core Subject", questions: 1850 },
-    { name: "English Language", icon: "📚", difficulty: "Core Subject", questions: 1620 },
-    { name: "Basic Science", icon: "🔬", difficulty: "Core Subject", questions: 1450 },
-    { name: "Social Studies", icon: "🌍", difficulty: "Core Subject", questions: 1340 },
+    { name: "Mathematics", icon: "📐", difficulty: "Core Subject", questions: subjectCounts?.["Mathematics"] || 0 },
+    { name: "English Language", icon: "📚", difficulty: "Core Subject", questions: subjectCounts?.["English Language"] || 0 },
+    { name: "Basic Science", icon: "🔬", difficulty: "Core Subject", questions: subjectCounts?.["Basic Science"] || 0 },
+    { name: "Social Studies", icon: "🌍", difficulty: "Core Subject", questions: subjectCounts?.["Social Studies"] || 0 },
   ];
 
   const topics = [
