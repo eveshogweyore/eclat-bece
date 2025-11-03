@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuizQuestionsBySubject } from "@/hooks/useQuizQuestions";
 import logo from "@/assets/logo.png";
 
 export default function StudentDashboard() {
@@ -17,7 +16,7 @@ export default function StudentDashboard() {
   const { signOut, user } = useAuth();
   const [activeTab, setActiveTab] = useState("subject");
   const [userName, setUserName] = useState("Student");
-  const { data: subjectCounts } = useQuizQuestionsBySubject();
+  const [subjectCounts, setSubjectCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -35,14 +34,29 @@ export default function StudentDashboard() {
       }
     };
 
+    const fetchQuestionCounts = async () => {
+      const { data, error } = await supabase
+        .from("quiz_questions")
+        .select("subject");
+
+      if (data && !error) {
+        const counts = data.reduce((acc: Record<string, number>, curr: any) => {
+          acc[curr.subject] = (acc[curr.subject] || 0) + 1;
+          return acc;
+        }, {});
+        setSubjectCounts(counts);
+      }
+    };
+
     fetchUserName();
+    fetchQuestionCounts();
   }, [user]);
 
   const subjects = [
-    { name: "Mathematics", icon: "📐", difficulty: "Core Subject", questions: subjectCounts?.["Mathematics"] || 0 },
-    { name: "English Language", icon: "📚", difficulty: "Core Subject", questions: subjectCounts?.["English Language"] || 0 },
-    { name: "Basic Science", icon: "🔬", difficulty: "Core Subject", questions: subjectCounts?.["Basic Science"] || 0 },
-    { name: "Social Studies", icon: "🌍", difficulty: "Core Subject", questions: subjectCounts?.["Social Studies"] || 0 },
+    { name: "Mathematics", icon: "📐", difficulty: "Core Subject", questions: subjectCounts["Mathematics"] || 0 },
+    { name: "English Language", icon: "📚", difficulty: "Core Subject", questions: subjectCounts["English Language"] || 0 },
+    { name: "Basic Science", icon: "🔬", difficulty: "Core Subject", questions: subjectCounts["Basic Science"] || 0 },
+    { name: "Social Studies", icon: "🌍", difficulty: "Core Subject", questions: subjectCounts["Social Studies"] || 0 },
   ];
 
   const topics = [
