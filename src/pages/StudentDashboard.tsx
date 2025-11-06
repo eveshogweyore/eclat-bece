@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { BookOpen, Trophy, TrendingUp, Target, Flame, LogOut, Settings } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { CompetitionLeaderboards } from "@/components/CompetitionLeaderboards";
 import { PracticeAssignment } from "@/components/PracticeAssignment";
 import { ProgressReport } from "@/components/ProgressReport";
@@ -117,6 +118,7 @@ export default function StudentDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <Button variant="ghost" size="icon">
               <Settings size={20} />
             </Button>
