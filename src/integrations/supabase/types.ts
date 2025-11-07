@@ -234,6 +234,47 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_results: {
+        Row: {
+          completed_at: string
+          correct_answers: number
+          created_at: string
+          id: string
+          score: number
+          student_id: string
+          subject: string
+          total_questions: number
+        }
+        Insert: {
+          completed_at?: string
+          correct_answers: number
+          created_at?: string
+          id?: string
+          score: number
+          student_id: string
+          subject: string
+          total_questions: number
+        }
+        Update: {
+          completed_at?: string
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          score?: number
+          student_id?: string
+          subject?: string
+          total_questions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_results_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           created_at: string
@@ -260,6 +301,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      student_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_activity_date: string | null
+          longest_streak: number
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_streaks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
@@ -338,6 +417,10 @@ export type Database = {
           id: string
           school_name: string
         }[]
+      }
+      update_student_streak: {
+        Args: { p_student_id: string }
+        Returns: undefined
       }
     }
     Enums: {

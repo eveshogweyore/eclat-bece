@@ -146,7 +146,48 @@ export default function QuizPage() {
       setSelectedAnswer(null);
       setShowFeedback(false);
     } else {
+      saveQuizResults();
       setQuizComplete(true);
+    }
+  };
+
+  const saveQuizResults = async () => {
+    if (!user) return;
+
+    try {
+      // Get student ID
+      const { data: studentData } = await supabase
+        .from("students")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!studentData?.id) {
+        console.error("Student ID not found");
+        return;
+      }
+
+      const percentage = (score / questions.length) * 100;
+
+      // Insert quiz result
+      const { error } = await supabase
+        .from("quiz_results")
+        .insert({
+          student_id: studentData.id,
+          subject: subject || "Mixed Topics",
+          score: percentage,
+          total_questions: questions.length,
+          correct_answers: score,
+        });
+
+      if (error) {
+        console.error("Error saving quiz result:", error);
+        toast.error("Failed to save quiz results");
+      } else {
+        toast.success("Quiz results saved! 🎉");
+      }
+    } catch (error) {
+      console.error("Error:", error);
     }
   };
 

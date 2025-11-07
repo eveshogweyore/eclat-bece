@@ -19,6 +19,7 @@ export default function StudentDashboard() {
   const [userName, setUserName] = useState("Student");
   const [classYear, setClassYear] = useState<string | null>(null);
   const [subjectCounts, setSubjectCounts] = useState<Record<string, number>>({});
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -78,8 +79,31 @@ export default function StudentDashboard() {
       }
     };
 
+    const fetchStreak = async () => {
+      if (!user) return;
+
+      const { data: studentData } = await supabase
+        .from("students")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!studentData?.id) return;
+
+      const { data: streakData } = await supabase
+        .from("student_streaks")
+        .select("current_streak")
+        .eq("student_id", studentData.id)
+        .maybeSingle();
+
+      if (streakData) {
+        setCurrentStreak(streakData.current_streak);
+      }
+    };
+
     fetchUserData();
     fetchQuestionCounts();
+    fetchStreak();
   }, [user]);
 
   const subjects = [
@@ -112,10 +136,12 @@ export default function StudentDashboard() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img src={logo} alt="Éclat Logo" className="h-10 w-auto cursor-pointer" onClick={() => navigate("/")} />
-            <div className="flex items-center gap-2 px-3 py-1 bg-accent-light rounded-full">
-              <Flame className="text-accent" size={16} />
-              <span className="text-sm font-semibold text-accent">5-day streak!</span>
-            </div>
+            {currentStreak > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-accent-light rounded-full">
+                <Flame className="text-accent" size={16} />
+                <span className="text-sm font-semibold text-accent">{currentStreak}-day streak!</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
