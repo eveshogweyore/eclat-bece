@@ -51,31 +51,31 @@ export function StudentLayout({ children }: StudentLayoutProps) {
         
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-            <div className="flex items-center justify-between px-4 py-4">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger />
+          <header className="border-b border-border/30 bg-gradient-to-r from-background via-background/98 to-background backdrop-blur-xl sticky top-0 z-50 shadow-[0_4px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+            <div className="flex items-center justify-between px-6 py-5">
+              <div className="flex items-center gap-6">
+                <SidebarTrigger className="hover:scale-110 transition-transform duration-200" />
                 <img 
                   src={logo} 
                   alt="Éclat Logo" 
-                  className="h-10 w-auto cursor-pointer" 
+                  className="h-12 w-auto cursor-pointer hover:scale-110 transition-all duration-300 filter drop-shadow-lg hover:drop-shadow-2xl" 
                   onClick={() => navigate("/")} 
                 />
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                <div className={`flex items-center gap-2.5 px-5 py-2.5 rounded-full shadow-lg backdrop-blur-sm border transition-all duration-300 hover:scale-105 ${
                   currentStreak === 0 
-                    ? 'bg-destructive/20' 
+                    ? 'bg-destructive/20 border-destructive/30' 
                     : currentStreak >= 7 
-                    ? 'bg-green-500/20' 
-                    : 'bg-accent-light'
+                    ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/40' 
+                    : 'bg-gradient-to-r from-accent/20 to-primary/20 border-accent/30'
                 }`}>
-                  <Flame className={`${
+                  <Flame className={`transition-all duration-300 ${
                     currentStreak === 0 
                       ? 'text-destructive' 
                       : currentStreak >= 7 
-                      ? 'text-green-600' 
-                      : 'text-accent'
-                  }`} size={16} />
-                  <span className={`text-sm font-semibold ${
+                      ? 'text-green-600 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]' 
+                      : 'text-accent drop-shadow-[0_0_8px_rgba(var(--accent),0.5)]'
+                  }`} size={18} />
+                  <span className={`text-[15px] font-bold tracking-tight ${
                     currentStreak === 0 
                       ? 'text-destructive' 
                       : currentStreak >= 7 
@@ -84,13 +84,22 @@ export function StudentLayout({ children }: StudentLayoutProps) {
                   }`}>{currentStreak}-day streak!</span>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <ThemeToggle />
-                <Button variant="ghost" size="icon">
-                  <Settings size={20} />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:scale-110 hover:bg-accent/20 transition-all duration-300 h-11 w-11 rounded-xl"
+                >
+                  <Settings size={22} />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={signOut}>
-                  <LogOut size={20} />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={signOut}
+                  className="hover:scale-110 hover:bg-destructive/20 hover:text-destructive transition-all duration-300 h-11 w-11 rounded-xl"
+                >
+                  <LogOut size={22} />
                 </Button>
               </div>
             </div>

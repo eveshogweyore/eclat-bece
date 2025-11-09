@@ -22,60 +22,68 @@ export const Navigation = ({ onLoginClick, onGetStartedClick }: NavigationProps)
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/98 backdrop-blur-md border-b border-border/50 shadow-lg">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-background via-background/95 to-background backdrop-blur-xl border-b border-border/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+      <div className="container mx-auto px-6 sm:px-8 lg:px-12">
+        <div className="flex items-center justify-between h-24">
           {/* Logo */}
           <div 
-            className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform duration-200" 
+            className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all duration-300 hover:drop-shadow-2xl" 
             onClick={() => {
               navigate("/");
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
           >
-            <img src={logo} alt="Éclat Logo" className="h-14 w-auto" />
+            <img src={logo} alt="Éclat Logo" className="h-16 w-auto filter drop-shadow-lg" />
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-10">
+          <div className="hidden md:flex items-center gap-12">
             <button
               onClick={() => scrollToSection("about")}
-              className="text-foreground/90 hover:text-primary transition-all duration-200 font-semibold text-[15px] tracking-tight hover:scale-105"
+              className="relative text-foreground/85 hover:text-primary transition-all duration-300 font-bold text-base tracking-tight hover:scale-110 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all after:duration-300 hover:after:w-full pb-1"
             >
               About
             </button>
             <button
               onClick={() => scrollToSection("features")}
-              className="text-foreground/90 hover:text-primary transition-all duration-200 font-semibold text-[15px] tracking-tight hover:scale-105"
+              className="relative text-foreground/85 hover:text-primary transition-all duration-300 font-bold text-base tracking-tight hover:scale-110 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all after:duration-300 hover:after:w-full pb-1"
             >
               Features
             </button>
             <button
               onClick={() => scrollToSection("leaderboard")}
-              className="text-foreground/90 hover:text-primary transition-all duration-200 font-semibold text-[15px] tracking-tight hover:scale-105"
+              className="relative text-foreground/85 hover:text-primary transition-all duration-300 font-bold text-base tracking-tight hover:scale-110 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all after:duration-300 hover:after:w-full pb-1"
             >
               Leaderboard
             </button>
             <button
               onClick={() => scrollToSection("pricing")}
-              className="text-foreground/90 hover:text-primary transition-all duration-200 font-semibold text-[15px] tracking-tight hover:scale-105"
+              className="relative text-foreground/85 hover:text-primary transition-all duration-300 font-bold text-base tracking-tight hover:scale-110 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all after:duration-300 hover:after:w-full pb-1"
             >
               Pricing
             </button>
             <button
               onClick={() => scrollToSection("contact")}
-              className="text-foreground/90 hover:text-primary transition-all duration-200 font-semibold text-[15px] tracking-tight hover:scale-105"
+              className="relative text-foreground/85 hover:text-primary transition-all duration-300 font-bold text-base tracking-tight hover:scale-110 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all after:duration-300 hover:after:w-full pb-1"
             >
               Contact
             </button>
           </div>
 
           {/* CTA Buttons */}
-          <div className="hidden md:flex items-center gap-4">
-            <Button variant="outline" onClick={onLoginClick} className="font-semibold text-[15px] px-6 h-11">
+          <div className="hidden md:flex items-center gap-5">
+            <Button 
+              variant="outline" 
+              onClick={onLoginClick} 
+              className="font-bold text-base px-8 h-12 border-2 hover:border-primary hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
               Login
             </Button>
-            <Button variant="hero" onClick={onGetStartedClick} className="font-semibold text-[15px] px-6 h-11 shadow-lg">
+            <Button 
+              variant="hero" 
+              onClick={onGetStartedClick} 
+              className="font-bold text-base px-8 h-12 shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-all duration-300 hover:scale-105 bg-gradient-to-r from-primary to-accent"
+            >
               Get Started
             </Button>
           </div>
