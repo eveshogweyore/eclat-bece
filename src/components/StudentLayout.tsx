@@ -54,7 +54,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
           <header className="border-b border-border/30 bg-gradient-to-r from-background via-background/98 to-background backdrop-blur-xl sticky top-0 z-50 shadow-[0_4px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
             <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-5">
               <div className="flex items-center gap-2 sm:gap-3 md:gap-6 overflow-x-auto">
-                <SidebarTrigger className="hover:scale-110 transition-transform duration-200 flex-shrink-0" />
+                <SidebarTrigger className="md:hidden hover:scale-110 transition-transform duration-200 flex-shrink-0" />
                 <img 
                   src={logo} 
                   alt="Éclat Logo" 
