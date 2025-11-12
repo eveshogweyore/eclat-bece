@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { Flame, LogOut, Settings, User } from "lucide-react";
+import { Flame, Settings, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ interface StudentLayoutProps {
 
 export function StudentLayout({ children }: StudentLayoutProps) {
   const navigate = useNavigate();
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const { theme } = useTheme();
   const [currentStreak, setCurrentStreak] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -118,14 +118,6 @@ export function StudentLayout({ children }: StudentLayoutProps) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={signOut}
-                  className="hover:scale-110 hover:bg-destructive/20 hover:text-destructive transition-all duration-300 h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 rounded-xl flex-shrink-0"
-                >
-                  <LogOut className="w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-[22px] md:h-[22px]" />
-                </Button>
               </div>
             </div>
           </header>

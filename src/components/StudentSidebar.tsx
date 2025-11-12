@@ -1,5 +1,6 @@
-import { LayoutDashboard, BookOpen, ClipboardList, TrendingUp, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, BookOpen, ClipboardList, TrendingUp, Trophy, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +27,7 @@ const menuItems = [
 export function StudentSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const { state, toggleSidebar } = useSidebar();
   const currentPath = location.pathname;
   const isCollapsed = state === "collapsed";
@@ -69,6 +71,25 @@ export function StudentSidebar() {
       </SidebarContent>
       
       <SidebarFooter>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="w-full justify-start hover:bg-destructive/20 hover:text-destructive mb-2"
+            >
+              <LogOut className={isCollapsed ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+              {!isCollapsed && <span>Logout</span>}
+            </Button>
+          </TooltipTrigger>
+          {isCollapsed && (
+            <TooltipContent side="right">
+              <p>Logout</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+        
         <Button
           variant="ghost"
           size="sm"
