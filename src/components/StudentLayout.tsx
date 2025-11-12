@@ -1,8 +1,14 @@
 import { ReactNode, useEffect, useState } from "react";
-import { Flame, LogOut, Settings } from "lucide-react";
+import { Flame, LogOut, Settings, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { StudentSidebar } from "@/components/StudentSidebar";
 import { StudentProfileSettings } from "@/components/StudentProfileSettings";
@@ -95,14 +101,23 @@ export function StudentLayout({ children }: StudentLayoutProps) {
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
                 <ThemeToggle />
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => setSettingsOpen(true)}
-                  className="hover:scale-110 hover:bg-accent/20 transition-all duration-300 h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 rounded-xl flex-shrink-0"
-                >
-                  <Settings className="w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-[22px] md:h-[22px]" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="hover:scale-110 hover:bg-accent/20 transition-all duration-300 h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 rounded-xl flex-shrink-0"
+                    >
+                      <Settings className="w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-[22px] md:h-[22px]" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile Settings</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button 
                   variant="ghost" 
                   size="icon" 
