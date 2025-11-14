@@ -6,12 +6,23 @@ import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
+
+interface QuizResult {
+  id: string;
+  subject: string;
+  score: number;
+  total_questions: number;
+  completed_at: string;
+}
 
 export default function StudentDashboardOverview() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [userName, setUserName] = useState("Student");
   const [classYear, setClassYear] = useState<string | null>(null);
+  const [recentActivity, setRecentActivity] = useState<QuizResult[]>([]);
+  const [studentId, setStudentId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -30,12 +41,27 @@ export default function StudentDashboardOverview() {
 
       const { data: studentData } = await supabase
         .from("students")
-        .select("class_year")
+        .select("id, class_year")
         .eq("user_id", user.id)
         .single();
       
-      if (studentData?.class_year) {
-        setClassYear(studentData.class_year);
+      if (studentData) {
+        if (studentData.class_year) {
+          setClassYear(studentData.class_year);
+        }
+        setStudentId(studentData.id);
+        
+        // Fetch recent quiz results
+        const { data: quizResults } = await supabase
+          .from("quiz_results")
+          .select("id, subject, score, total_questions, completed_at")
+          .eq("student_id", studentData.id)
+          .order("completed_at", { ascending: false })
+          .limit(3);
+        
+        if (quizResults) {
+          setRecentActivity(quizResults);
+        }
       }
     };
 
@@ -178,23 +204,33 @@ export default function StudentDashboardOverview() {
           <CardDescription>Your latest quiz results</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {[
-              { subject: "Mathematics", score: 85, date: "2 hours ago", questions: 20 },
-              { subject: "English Language", score: 78, date: "1 day ago", questions: 15 },
-              { subject: "Basic Science", score: 92, date: "2 days ago", questions: 18 },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/30 hover:bg-muted/50 hover:shadow-soft transition-all">
-                <div>
-                  <h4 className="font-semibold text-foreground">{activity.subject}</h4>
-                  <p className="text-sm text-muted-foreground">{activity.questions} questions • {activity.date}</p>
+          {recentActivity.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No quiz activity yet. Start practicing to see your results here!</p>
+              <Button 
+                onClick={() => navigate("/dashboard/student/practice")} 
+                className="mt-4"
+              >
+                Start Practice
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/30 hover:bg-muted/50 hover:shadow-soft transition-all">
+                  <div>
+                    <h4 className="font-semibold text-foreground">{activity.subject}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {activity.total_questions} questions • {formatDistanceToNow(new Date(activity.completed_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-primary">{Math.round(activity.score)}%</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-primary">{activity.score}%</p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
