@@ -70,7 +70,8 @@ export default function QuizPage() {
           query = query.eq("subject", subject);
         }
 
-        const { data: questionsData, error: questionsError } = await query.limit(10);
+        // Fetch all questions matching the criteria first
+        const { data: allQuestions, error: questionsError } = await query;
 
         if (questionsError) {
           console.error("Error fetching questions:", questionsError);
@@ -79,11 +80,16 @@ export default function QuizPage() {
           return;
         }
 
-        if (!questionsData || questionsData.length === 0) {
+        if (!allQuestions || allQuestions.length === 0) {
           toast.error("No questions available for this subject");
           navigate("/dashboard/student");
           return;
         }
+
+        // Randomly shuffle and select 10 questions
+        const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
+        const questionsData = shuffled.slice(0, Math.min(10, shuffled.length));
+
 
         // Fetch options for each question
         const questionsWithOptions = await Promise.all(
