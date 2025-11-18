@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, TrendingUp, BookOpen, Plus, FileText, LogOut, Settings } from "lucide-react";
+import { Users, TrendingUp, BookOpen, Plus, FileText, LogOut, Settings, Award, Target } from "lucide-react";
 import { CompetitionLeaderboards } from "@/components/CompetitionLeaderboards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 
 interface LinkedChild {
   id: string;
@@ -24,6 +26,23 @@ interface LinkedChild {
     full_name: string | null;
     unique_id: string;
   };
+}
+
+interface QuizResult {
+  id: string;
+  subject: string;
+  score: number;
+  correct_answers: number;
+  total_questions: number;
+  completed_at: string;
+}
+
+interface ChildAnalytics {
+  studentId: string;
+  averageScore: number;
+  totalQuizzes: number;
+  subjectPerformance: { subject: string; avgScore: number; count: number }[];
+  recentQuizzes: QuizResult[];
 }
 
 export default function ParentDashboard() {
@@ -39,6 +58,7 @@ export default function ParentDashboard() {
   const [linkedChildren, setLinkedChildren] = useState<LinkedChild[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [parentUserId, setParentUserId] = useState<string | null>(null);
+  const [childrenAnalytics, setChildrenAnalytics] = useState<Map<string, ChildAnalytics>>(new Map());
   
   const logo = theme === "dark" ? logoLight : logoDark;
 
@@ -83,10 +103,59 @@ export default function ParentDashboard() {
 
       if (data) {
         setLinkedChildren(data as unknown as LinkedChild[]);
+        // Fetch analytics for each child
+        data.forEach((child) => {
+          fetchChildAnalytics(child.id);
+        });
       }
     } catch (error) {
       console.error("Error fetching linked children:", error);
       toast.error("Failed to load linked children");
+    }
+  };
+
+  const fetchChildAnalytics = async (studentId: string) => {
+    try {
+      const { data: quizResults, error } = await supabase
+        .from("quiz_results")
+        .select("*")
+        .eq("student_id", studentId)
+        .order("completed_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (quizResults && quizResults.length > 0) {
+        // Calculate average score
+        const averageScore = quizResults.reduce((acc, result) => acc + result.score, 0) / quizResults.length;
+
+        // Calculate subject performance
+        const subjectMap = new Map<string, { totalScore: number; count: number }>();
+        quizResults.forEach((result) => {
+          const existing = subjectMap.get(result.subject) || { totalScore: 0, count: 0 };
+          subjectMap.set(result.subject, {
+            totalScore: existing.totalScore + result.score,
+            count: existing.count + 1,
+          });
+        });
+
+        const subjectPerformance = Array.from(subjectMap.entries()).map(([subject, data]) => ({
+          subject: subject.charAt(0).toUpperCase() + subject.slice(1),
+          avgScore: Math.round(data.totalScore / data.count),
+          count: data.count,
+        }));
+
+        const analytics: ChildAnalytics = {
+          studentId,
+          averageScore: Math.round(averageScore),
+          totalQuizzes: quizResults.length,
+          subjectPerformance,
+          recentQuizzes: quizResults.slice(0, 5) as QuizResult[],
+        };
+
+        setChildrenAnalytics((prev) => new Map(prev).set(studentId, analytics));
+      }
+    } catch (error) {
+      console.error("Error fetching child analytics:", error);
     }
   };
 
@@ -286,10 +355,116 @@ export default function ParentDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p className="mb-2">Detailed analytics coming soon!</p>
-                    <p className="text-sm">We're working on bringing you comprehensive performance insights.</p>
-                  </div>
+                  {childrenAnalytics.has(child.id) ? (
+                    <div className="space-y-6">
+                      {/* Key Stats */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="p-4 rounded-lg bg-primary-light border border-primary/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Award className="h-4 w-4 text-primary" />
+                            <p className="text-xs font-medium text-muted-foreground">Avg Score</p>
+                          </div>
+                          <p className="text-2xl font-bold text-foreground">
+                            {childrenAnalytics.get(child.id)!.averageScore}%
+                          </p>
+                        </div>
+                        <div className="p-4 rounded-lg bg-accent-light border border-accent/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Target className="h-4 w-4 text-accent" />
+                            <p className="text-xs font-medium text-muted-foreground">Total Quizzes</p>
+                          </div>
+                          <p className="text-2xl font-bold text-foreground">
+                            {childrenAnalytics.get(child.id)!.totalQuizzes}
+                          </p>
+                        </div>
+                        <div className="p-4 rounded-lg bg-secondary border border-border">
+                          <div className="flex items-center gap-2 mb-1">
+                            <BookOpen className="h-4 w-4 text-primary" />
+                            <p className="text-xs font-medium text-muted-foreground">Subjects</p>
+                          </div>
+                          <p className="text-2xl font-bold text-foreground">
+                            {childrenAnalytics.get(child.id)!.subjectPerformance.length}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Subject Performance Chart */}
+                      {childrenAnalytics.get(child.id)!.subjectPerformance.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-sm text-foreground">Subject Performance</h4>
+                          <div className="h-64 w-full">
+                            <ChartContainer
+                              config={{
+                                avgScore: {
+                                  label: "Average Score",
+                                  color: "hsl(var(--primary))",
+                                },
+                              }}
+                            >
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={childrenAnalytics.get(child.id)!.subjectPerformance}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis 
+                                    dataKey="subject" 
+                                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                                  />
+                                  <YAxis 
+                                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                                    domain={[0, 100]}
+                                  />
+                                  <ChartTooltip content={<ChartTooltipContent />} />
+                                  <Bar 
+                                    dataKey="avgScore" 
+                                    fill="hsl(var(--primary))" 
+                                    radius={[8, 8, 0, 0]}
+                                  />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </ChartContainer>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Recent Activity */}
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm text-foreground">Recent Quizzes</h4>
+                        <div className="space-y-2">
+                          {childrenAnalytics.get(child.id)!.recentQuizzes.slice(0, 3).map((quiz) => (
+                            <div
+                              key={quiz.id}
+                              className="flex items-center justify-between p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-colors"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-primary-light flex items-center justify-center">
+                                  <BookOpen className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-sm text-foreground">
+                                    {quiz.subject.charAt(0).toUpperCase() + quiz.subject.slice(1)}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {new Date(quiz.completed_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-lg text-foreground">{Math.round(quiz.score)}%</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {quiz.correct_answers}/{quiz.total_questions}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="mb-2">No quiz data yet</p>
+                      <p className="text-sm">Analytics will appear once your child completes their first quiz</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
