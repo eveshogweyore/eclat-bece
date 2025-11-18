@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Flame, Settings, User as UserIcon, KeyRound, Link2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -127,6 +128,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
                 </div>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+                <NotificationBell />
                 <ThemeToggle />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

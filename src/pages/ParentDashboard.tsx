@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Users, TrendingUp, BookOpen, Plus, FileText, LogOut, Settings, Award, Target } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 import { CompetitionLeaderboards } from "@/components/CompetitionLeaderboards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -211,6 +212,28 @@ export default function ParentDashboard() {
         return;
       }
 
+      // Check if there's already a pending request
+      const { data: existingRequest, error: requestCheckError } = await supabase
+        .from("parent_child_link_requests")
+        .select("id, status")
+        .eq("parent_id", parentUserId)
+        .eq("student_id", studentData.id)
+        .maybeSingle();
+
+      if (requestCheckError && requestCheckError.code !== "PGRST116") {
+        throw requestCheckError;
+      }
+
+      if (existingRequest) {
+        if (existingRequest.status === "pending") {
+          toast.error("You already have a pending request for this student");
+        } else {
+          toast.error("You already sent a request to this student");
+        }
+        setIsAddingChild(false);
+        return;
+      }
+
       // Check if already linked to another parent
       if (studentData.parent_id && studentData.parent_id !== parentUserId) {
         toast.error("This student is already linked to another parent account");
@@ -218,23 +241,38 @@ export default function ParentDashboard() {
         return;
       }
 
-      // Link the student to this parent
-      const { error: updateError } = await supabase
-        .from("students")
-        .update({ parent_id: parentUserId })
-        .eq("id", studentData.id);
+      // Create link request
+      const { data: linkRequest, error: requestError } = await supabase
+        .from("parent_child_link_requests")
+        .insert({
+          parent_id: parentUserId,
+          student_id: studentData.id,
+          status: "pending",
+        })
+        .select()
+        .single();
 
-      if (updateError) throw updateError;
+      if (requestError) throw requestError;
 
-      toast.success("Child successfully linked to your account!");
+      // Create notification for student
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: profileData.id,
+          type: "link_request",
+          title: "New Parent Link Request",
+          message: "A parent has requested to link with your account. Please review and accept or reject this request.",
+          metadata: { request_id: linkRequest.id },
+        });
+
+      if (notificationError) throw notificationError;
+
+      toast.success("Link request sent! The student will receive a notification to accept or reject.");
       setStudentCode("");
       setAddChildOpen(false);
-      
-      // Refresh the linked children list
-      await fetchLinkedChildren(parentUserId);
     } catch (error) {
-      console.error("Error linking child:", error);
-      toast.error("Failed to link child. Please try again.");
+      console.error("Error creating link request:", error);
+      toast.error("Failed to send link request. Please try again.");
     } finally {
       setIsAddingChild(false);
     }
@@ -252,6 +290,7 @@ export default function ParentDashboard() {
             onClick={() => navigate("/")}
           />
           <div className="flex items-center gap-4">
+            <NotificationBell />
             <Button variant="ghost" size="icon">
               <Settings size={20} />
             </Button>
