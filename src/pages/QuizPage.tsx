@@ -16,6 +16,10 @@ interface Question {
   correctAnswer: number;
   explanation: string;
   subject: string;
+  passage?: {
+    title: string | null;
+    passage_text: string;
+  } | null;
 }
 
 
@@ -25,7 +29,7 @@ export default function QuizPage() {
   const { user } = useAuth();
   const subject = searchParams.get("subject");
   const topic = searchParams.get("topic");
-  
+
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -54,8 +58,8 @@ export default function QuizPage() {
         }
 
         // Determine which table to query
-        const tableName = studentData.class_year === 'year_6' 
-          ? 'quiz_questions_year6' 
+        const tableName = studentData.class_year === 'year_6'
+          ? 'quiz_questions_year6'
           : 'quiz_questions_year9';
 
         const optionsTableName = studentData.class_year === 'year_6'
@@ -63,9 +67,17 @@ export default function QuizPage() {
           : 'quiz_options_year9';
 
         // Build query with subject and/or topic filter if provided
+        // Include passage data in the select
+        const passageTableName = studentData.class_year === 'year_6'
+          ? 'comprehension_passages_year6'
+          : 'comprehension_passages_year9';
+
         let query = supabase
           .from(tableName as any)
-          .select("*");
+          .select(`
+            *,
+            passage:${passageTableName}(title, passage_text)
+          `);
 
         if (subject) {
           query = query.eq("subject", subject);
@@ -114,6 +126,7 @@ export default function QuizPage() {
               correctAnswer: correctOptionIndex,
               explanation: q.explanation || "No explanation available.",
               subject: q.subject,
+              passage: q.passage || null,
             };
           })
         );
@@ -142,7 +155,7 @@ export default function QuizPage() {
 
   const handleSubmitAnswer = () => {
     if (selectedAnswer === null) return;
-    
+
     const isCorrect = selectedAnswer === question.correctAnswer;
     if (isCorrect) {
       setScore(score + 1);
@@ -249,9 +262,8 @@ export default function QuizPage() {
             {answers.map((correct, index) => (
               <div
                 key={index}
-                className={`aspect-square rounded-lg flex items-center justify-center ${
-                  correct ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
-                }`}
+                className={`aspect-square rounded-lg flex items-center justify-center ${correct ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
+                  }`}
               >
                 {correct ? (
                   <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -286,7 +298,7 @@ export default function QuizPage() {
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
           </Button>
-          
+
           <div className="flex justify-between items-center mb-2">
             <Badge variant="secondary">{subject || "Mixed Topics"}</Badge>
             <span className="text-sm text-muted-foreground">
@@ -297,6 +309,19 @@ export default function QuizPage() {
         </div>
 
         <Card className="p-8 animate-fade-in">
+          {/* Passage Display (if present) */}
+          {question.passage && (
+            <div className="mb-6 p-4 bg-muted rounded-lg border">
+              <h3 className="font-semibold mb-2 text-sm text-primary">Read the passage below:</h3>
+              {question.passage.title && (
+                <h4 className="font-medium mb-2">{question.passage.title}</h4>
+              )}
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {question.passage.passage_text}
+              </p>
+            </div>
+          )}
+
           <h2 className="text-2xl font-bold mb-6">{question.question}</h2>
 
           <div className="space-y-3 mb-6">
@@ -311,15 +336,14 @@ export default function QuizPage() {
                   key={index}
                   onClick={() => handleAnswerSelect(index)}
                   disabled={showFeedback}
-                  className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-                    showCorrect
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                      : showIncorrect
+                  className={`w-full p-4 text-left rounded-lg border-2 transition-all ${showCorrect
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    : showIncorrect
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
                       : isSelected
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                  } ${showFeedback ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                    } ${showFeedback ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{option}</span>
@@ -332,11 +356,10 @@ export default function QuizPage() {
           </div>
 
           {showFeedback && (
-            <div className={`p-4 rounded-lg mb-6 animate-fade-in ${
-              selectedAnswer === question.correctAnswer
-                ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800'
-                : 'bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800'
-            }`}>
+            <div className={`p-4 rounded-lg mb-6 animate-fade-in ${selectedAnswer === question.correctAnswer
+              ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800'
+              : 'bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800'
+              }`}>
               <div className="flex items-start gap-3">
                 {selectedAnswer === question.correctAnswer ? (
                   <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />

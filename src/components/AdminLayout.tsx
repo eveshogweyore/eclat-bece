@@ -105,6 +105,7 @@ export const AdminLayout = () => {
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
         { name: "Admin Users", href: "/admin/users", icon: Shield },
         { name: "Question Bank", href: "/admin/questions", icon: BookOpen },
+        { name: "Passages", href: "/admin/passages", icon: FileText },
         { name: "Platform Users", href: "/admin/platform-users", icon: Users },
         { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
         { name: "Competitions", href: "/admin/competitions", icon: Trophy },

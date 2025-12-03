@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -39,6 +39,8 @@ import { CSVUploadForm } from "./CSVUploadForm";
 
 const formSchema = z.object({
     classYear: z.enum(["year_6", "year_9"]),
+    questionType: z.enum(["standard", "comprehension"]),
+    passageId: z.string().optional(),
     subject: z.string().min(1, "Subject is required"),
     topic: z.string().optional(),
     questionText: z.string().min(1, "Question text is required"),
@@ -51,7 +53,10 @@ const formSchema = z.object({
         (options) => options.filter(o => o.isCorrect).length === 1,
         "Exactly one option must be marked as correct"
     ),
-});
+}).refine(
+    (data) => data.questionType === "standard" || (data.questionType === "comprehension" && data.passageId),
+    { message: "Please select a passage for comprehension questions", path: ["passageId"] }
+);
 
 interface AddQuestionDialogProps {
     onSuccess: () => void;
@@ -61,12 +66,15 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
     const [open, setOpen] = useState(false);
     const [uploadMode, setUploadMode] = useState<"individual" | "csv">("individual");
     const [loading, setLoading] = useState(false);
+    const [passages, setPassages] = useState<Array<{ id: string; title: string | null; passage_text: string }>>([]);
     const { user } = useAuth();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             classYear: "year_6",
+            questionType: "standard",
+            passageId: "",
             subject: "",
             topic: "",
             questionText: "",
@@ -80,6 +88,34 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
             ],
         },
     });
+
+    const classYear = form.watch("classYear");
+    const questionType = form.watch("questionType");
+
+    useEffect(() => {
+        if (questionType === "comprehension") {
+            fetchPassages();
+        }
+    }, [questionType, classYear]);
+
+    const fetchPassages = async () => {
+        try {
+            const tableName = classYear === 'year_6'
+                ? 'comprehension_passages_year6'
+                : 'comprehension_passages_year9';
+
+            const { data, error } = await supabase
+                .from(tableName as any)
+                .select('id, title, passage_text')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setPassages(data || []);
+        } catch (error) {
+            console.error('Error fetching passages:', error);
+            toast.error('Failed to load passages');
+        }
+    };
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         if (!user) return;
@@ -96,9 +132,10 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
                     subject: values.subject,
                     topic: values.topic,
                     question_text: values.questionText,
-                    correct_answer: values.options.find(o => o.isCorrect)?.text, // Redundant but kept for schema compatibility if needed
+                    correct_answer: values.options.find(o => o.isCorrect)?.text,
                     explanation: values.explanation,
                     difficulty: values.difficulty,
+                    passage_id: values.questionType === "comprehension" ? values.passageId : null,
                 })
                 .select()
                 .single();
@@ -243,6 +280,73 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
                                     )}
                                 />
                             </div>
+
+                            {/* Question Type Selection */}
+                            <FormField
+                                control={form.control}
+                                name="questionType"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Question Type</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select type" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="standard">Standard Question</SelectItem>
+                                                <SelectItem value="comprehension">Comprehension Question</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Passage Selection (only for comprehension questions) */}
+                            {questionType === "comprehension" && (
+                                <FormField
+                                    control={form.control}
+                                    name="passageId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Select Passage</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Choose a passage" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {passages.length === 0 ? (
+                                                        <SelectItem value="none" disabled>
+                                                            No passages available
+                                                        </SelectItem>
+                                                    ) : (
+                                                        passages.map((passage) => (
+                                                            <SelectItem key={passage.id} value={passage.id}>
+                                                                {passage.title || passage.passage_text.substring(0, 50) + "..."}
+                                                            </SelectItem>
+                                                        ))
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+
+                            {/* Passage Preview */}
+                            {questionType === "comprehension" && form.watch("passageId") && (
+                                <div className="p-4 bg-muted rounded-lg border">
+                                    <h4 className="font-semibold mb-2 text-sm">Passage Preview:</h4>
+                                    <p className="text-sm whitespace-pre-wrap">
+                                        {passages.find(p => p.id === form.watch("passageId"))?.passage_text}
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-2 gap-4">
                                 <FormField

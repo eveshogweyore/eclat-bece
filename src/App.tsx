@@ -36,6 +36,7 @@ import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 import AdminCompetitionsPage from "./pages/AdminCompetitionsPage";
 import AdminReportsPage from "./pages/AdminReportsPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
+import PassagesPage from "./pages/PassagesPage";
 import { AuthProvider } from "./components/AuthProvider";
 
 const queryClient = new QueryClient();
@@ -132,6 +133,7 @@ const App = () => (
                 <Route path="users" element={<AdminUsersPage />} />
                 <Route path="platform-users" element={<PlatformUsersPage />} />
                 <Route path="questions" element={<QuestionBankPage />} />
+                <Route path="passages" element={<PassagesPage />} />
                 <Route path="analytics" element={<AdminAnalyticsPage />} />
                 <Route path="competitions" element={<AdminCompetitionsPage />} />
                 <Route path="reports" element={<AdminReportsPage />} />
