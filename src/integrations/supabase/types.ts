@@ -107,6 +107,7 @@ export type Database = {
           code: string
           created_at: string
           expires_at: string
+          failed_attempts: number | null
           id: string
           user_id: string
           verified: boolean | null
@@ -115,6 +116,7 @@ export type Database = {
           code: string
           created_at?: string
           expires_at: string
+          failed_attempts?: number | null
           id?: string
           user_id: string
           verified?: boolean | null
@@ -123,6 +125,7 @@ export type Database = {
           code?: string
           created_at?: string
           expires_at?: string
+          failed_attempts?: number | null
           id?: string
           user_id?: string
           verified?: boolean | null

@@ -16,6 +16,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limit: minimum time between requests (in milliseconds)
+const MIN_REQUEST_INTERVAL_MS = 60 * 1000; // 1 minute
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -39,6 +42,38 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Rate limiting: Check if a valid unexpired code was created recently
+    const { data: existingCode, error: existingError } = await supabase
+      .from("email_verification_codes")
+      .select("created_at")
+      .eq("user_id", user_id)
+      .eq("verified", false)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("Error checking existing codes", existingError);
+    }
+
+    // If a code was created within the rate limit window, reject the request
+    if (existingCode) {
+      const createdAt = new Date(existingCode.created_at).getTime();
+      const now = Date.now();
+      if (now - createdAt < MIN_REQUEST_INTERVAL_MS) {
+        const waitSeconds = Math.ceil((MIN_REQUEST_INTERVAL_MS - (now - createdAt)) / 1000);
+        console.warn("Rate limit hit for user", user_id, "wait", waitSeconds, "seconds");
+        return new Response(
+          JSON.stringify({ 
+            error: `Please wait ${waitSeconds} seconds before requesting a new code.`,
+            retry_after: waitSeconds 
+          }),
+          { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
 
     // Fetch the user's email from Auth Admin (service role) to avoid relying on profiles
     const { data: userRes, error: adminErr } = await supabase.auth.admin.getUserById(user_id);
@@ -80,6 +115,7 @@ serve(async (req) => {
         user_id: user_id,
         code: code,
         expires_at: expiresAt.toISOString(),
+        failed_attempts: 0,
       });
 
     if (insertError) {
@@ -124,7 +160,7 @@ serve(async (req) => {
       `,
     });
 
-    console.log("Verification email sent", emailResponse);
+    console.log("Verification email sent for user", user_id, emailResponse);
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
