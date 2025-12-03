@@ -79,6 +79,8 @@ const Index = () => {
           navigate("/dashboard/parent");
         } else if (roleData?.role === "school") {
           navigate("/dashboard/school");
+        } else if (roleData?.role === "admin") {
+          navigate("/admin");
         }
       }
     } catch (error) {
@@ -87,7 +89,7 @@ const Index = () => {
       setIsCheckingAuth(false);
     }
   };
-  
+
   const handleAuthAction = () => {
     navigate("/role-selection");
   };

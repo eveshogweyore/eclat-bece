@@ -41,7 +41,7 @@ import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "student" | "parent" | "school";
+  requiredRole?: "student" | "parent" | "school" | "admin";
 }
 
 export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
@@ -52,7 +52,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
 
   useEffect(() => {
     checkAuthStatus();
-    
+
     // IMPORTANT: Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -90,7 +90,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
           .from("user_roles")
           .select("role")
           .eq("user_id", session.user.id)
-          .eq("role", requiredRole)
+          .eq("role", requiredRole as any) // Cast to any to support admin role before type regeneration
           .maybeSingle();
 
         if (!roleData) {
@@ -119,6 +119,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
             if (userRole.role === "student") navigate("/dashboard/student");
             else if (userRole.role === "parent") navigate("/dashboard/parent");
             else if (userRole.role === "school") navigate("/dashboard/school");
+            else if (userRole.role === "admin") navigate("/admin");
             else navigate("/role-selection");
             return;
           }
