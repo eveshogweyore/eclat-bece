@@ -20,6 +20,7 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
     Select,
     SelectContent,
@@ -40,7 +41,10 @@ import { CSVUploadForm } from "./CSVUploadForm";
 const formSchema = z.object({
     classYear: z.enum(["year_6", "year_9"]),
     questionType: z.enum(["standard", "comprehension"]),
+    passageMode: z.enum(["select", "create"]).optional(),
     passageId: z.string().optional(),
+    newPassageTitle: z.string().optional(),
+    newPassageText: z.string().optional(),
     subject: z.string().min(1, "Subject is required"),
     topic: z.string().min(1, "Topic is required"),
     questionText: z.string().min(1, "Question text is required"),
@@ -54,8 +58,18 @@ const formSchema = z.object({
         "Exactly one option must be marked as correct"
     ),
 }).refine(
-    (data) => data.questionType === "standard" || (data.questionType === "comprehension" && data.passageId),
-    { message: "Please select a passage for comprehension questions", path: ["passageId"] }
+    (data) => {
+        if (data.questionType === "comprehension") {
+            if (data.passageMode === "select" && !data.passageId) {
+                return false;
+            }
+            if (data.passageMode === "create" && (!data.newPassageText || data.newPassageText.length < 10)) {
+                return false;
+            }
+        }
+        return true;
+    },
+    { message: "Please complete passage selection or creation", path: ["passageId"] }
 );
 
 interface AddQuestionDialogProps {
@@ -74,7 +88,10 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
         defaultValues: {
             classYear: "year_6",
             questionType: "standard",
+            passageMode: "select",
             passageId: "",
+            newPassageTitle: "",
+            newPassageText: "",
             subject: "",
             topic: "",
             questionText: "",
@@ -91,6 +108,7 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
 
     const classYear = form.watch("classYear");
     const questionType = form.watch("questionType");
+    const passageMode = form.watch("passageMode");
 
     useEffect(() => {
         if (questionType === "comprehension") {
@@ -107,7 +125,7 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
             const { data, error } = await supabase
                 .from(tableName as any)
                 .select('id, title, passage_text')
-                .order('created_at', { ascending: false });
+                .order('title', { ascending: true, nullsFirst: false });
 
             if (error) throw error;
             setPassages(data || []);
@@ -124,6 +142,26 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
         try {
             const tableName = values.classYear === 'year_6' ? 'quiz_questions_year6' : 'quiz_questions_year9';
             const optionsTableName = values.classYear === 'year_6' ? 'quiz_options_year6' : 'quiz_options_year9';
+            const passageTableName = values.classYear === 'year_6' ? 'comprehension_passages_year6' : 'comprehension_passages_year9';
+
+            let finalPassageId = values.passageId;
+
+            // If creating a new passage, insert it first
+            if (values.questionType === "comprehension" && values.passageMode === "create" && values.newPassageText) {
+                const { data: newPassage, error: passageError } = await supabase
+                    .from(passageTableName as any)
+                    .insert({
+                        title: values.newPassageTitle || null,
+                        passage_text: values.newPassageText,
+                        subject: 'English Language',
+                        topic: values.topic,
+                    })
+                    .select()
+                    .single();
+
+                if (passageError) throw passageError;
+                finalPassageId = newPassage.id;
+            }
 
             // 1. Insert Question
             const { data: questionData, error: questionError } = await supabase
@@ -135,7 +173,7 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
                     correct_answer: values.options.find(o => o.isCorrect)?.text,
                     explanation: values.explanation,
                     difficulty: values.difficulty,
-                    passage_id: values.questionType === "comprehension" ? values.passageId : null,
+                    passage_id: values.questionType === "comprehension" ? finalPassageId : null,
                 })
                 .select()
                 .single();
@@ -344,48 +382,130 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
                                 )}
                             />
 
-                            {/* Passage Selection (only for comprehension questions) */}
+                            {/* Passage Mode Selection (only for comprehension questions) */}
                             {questionType === "comprehension" && (
-                                <FormField
-                                    control={form.control}
-                                    name="passageId"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Select Passage</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value}>
+                                <>
+                                    <FormField
+                                        control={form.control}
+                                        name="passageMode"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-3">
+                                                <FormLabel>Passage Options</FormLabel>
                                                 <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Choose a passage" />
-                                                    </SelectTrigger>
+                                                    <RadioGroup
+                                                        onValueChange={field.onChange}
+                                                        defaultValue={field.value}
+                                                        className="flex flex-col space-y-1"
+                                                    >
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl>
+                                                                <RadioGroupItem value="select" />
+                                                            </FormControl>
+                                                            <FormLabel className="font-normal cursor-pointer">
+                                                                Choose a Passage
+                                                            </FormLabel>
+                                                        </FormItem>
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl>
+                                                                <RadioGroupItem value="create" />
+                                                            </FormControl>
+                                                            <FormLabel className="font-normal cursor-pointer">
+                                                                Create New Passage
+                                                            </FormLabel>
+                                                        </FormItem>
+                                                    </RadioGroup>
                                                 </FormControl>
-                                                <SelectContent>
-                                                    {passages.length === 0 ? (
-                                                        <SelectItem value="none" disabled>
-                                                            No passages available
-                                                        </SelectItem>
-                                                    ) : (
-                                                        passages.map((passage) => (
-                                                            <SelectItem key={passage.id} value={passage.id}>
-                                                                {passage.title || passage.passage_text.substring(0, 50) + "..."}
-                                                            </SelectItem>
-                                                        ))
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            )}
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
 
-                            {/* Passage Preview */}
-                            {questionType === "comprehension" && form.watch("passageId") && (
-                                <div className="p-4 bg-muted rounded-lg border">
-                                    <h4 className="font-semibold mb-2 text-sm">Passage Preview:</h4>
-                                    <p className="text-sm whitespace-pre-wrap">
-                                        {passages.find(p => p.id === form.watch("passageId"))?.passage_text}
-                                    </p>
-                                </div>
+                                    {/* Select Existing Passage */}
+                                    {passageMode === "select" && (
+                                        <>
+                                            <FormField
+                                                control={form.control}
+                                                name="passageId"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Select Passage</FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Choose a passage" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {passages.length === 0 ? (
+                                                                    <SelectItem value="none" disabled>
+                                                                        No passages available
+                                                                    </SelectItem>
+                                                                ) : (
+                                                                    passages.map((passage) => (
+                                                                        <SelectItem key={passage.id} value={passage.id}>
+                                                                            {passage.title || passage.passage_text.substring(0, 50) + "..."}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                )}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Passage Preview */}
+                                            {form.watch("passageId") && (
+                                                <div className="p-4 bg-muted rounded-lg border">
+                                                    <h4 className="font-semibold mb-2 text-sm">Passage Preview:</h4>
+                                                    <p className="text-sm whitespace-pre-wrap">
+                                                        {passages.find(p => p.id === form.watch("passageId"))?.passage_text}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {/* Create New Passage */}
+                                    {passageMode === "create" && (
+                                        <>
+                                            <FormField
+                                                control={form.control}
+                                                name="newPassageTitle"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Passage Title (Optional)</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="e.g. The Lion and the Mouse" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="newPassageText"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Passage</FormLabel>
+                                                        <FormControl>
+                                                            <Textarea
+                                                                placeholder="Enter the reading passage here..."
+                                                                className="min-h-[150px] font-serif"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            Minimum 10 characters required
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </>
+                                    )}
+                                </>
                             )}
 
                             <FormField
