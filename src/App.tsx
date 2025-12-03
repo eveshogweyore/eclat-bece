@@ -36,6 +36,7 @@ import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 import AdminCompetitionsPage from "./pages/AdminCompetitionsPage";
 import AdminReportsPage from "./pages/AdminReportsPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
+import { AuthProvider } from "./components/AuthProvider";
 
 const queryClient = new QueryClient();
 
@@ -45,146 +46,102 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/role-selection" element={<RoleSelectionPage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/password-reset" element={<PasswordResetPage />} />
-            <Route path="/verify-email" element={<EmailVerificationPage />} />
-            <Route path="/onboarding/student" element={
-              <ProtectedRoute requiredRole="student">
-                <StudentOnboarding />
-              </ProtectedRoute>
-            } />
-            <Route path="/onboarding/parent" element={
-              <ProtectedRoute requiredRole="parent">
-                <ParentOnboarding />
-              </ProtectedRoute>
-            } />
-            <Route path="/onboarding/school" element={
-              <ProtectedRoute requiredRole="school">
-                <SchoolOnboarding />
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/student" element={
-              <ProtectedRoute requiredRole="student">
-                <StudentLayout>
-                  <StudentDashboardOverview />
-                </StudentLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/student/practice" element={
-              <ProtectedRoute requiredRole="student">
-                <StudentLayout>
-                  <StudentPractice />
-                </StudentLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/student/assignments" element={
-              <ProtectedRoute requiredRole="student">
-                <StudentLayout>
-                  <StudentAssignments />
-                </StudentLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/student/progress" element={
-              <ProtectedRoute requiredRole="student">
-                <StudentLayout>
-                  <StudentProgressPage />
-                </StudentLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/student/leaderboard" element={
-              <ProtectedRoute requiredRole="student">
-                <StudentLayout>
-                  <StudentLeaderboardPage />
-                </StudentLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/parent" element={
-              <ProtectedRoute requiredRole="parent">
-                <ParentDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/school" element={
-              <ProtectedRoute requiredRole="school">
-                <SchoolDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/quiz" element={
-              <ProtectedRoute>
-                <QuizPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/subject-analytics" element={
-              <ProtectedRoute>
-                <SubjectAnalytics />
-              </ProtectedRoute>
-            } />
-            {/* Admin Routes */}
-            <Route path="/admin/login" element={<AdminLoginPage />} />
-            <Route path="/admin" element={
-              <AdminProtectedRoute>
-                <AdminLayout>
-                  <AdminDashboard />
-                </AdminLayout>
-              </AdminProtectedRoute>
-            } />
-            <Route path="/admin/users" element={
-              <AdminProtectedRoute>
-                <AdminLayout>
-                  <AdminUsersPage />
-                </AdminLayout>
-              </AdminProtectedRoute>
-            } />
-            <Route path="/admin/platform-users" element={
-              <AdminProtectedRoute>
-                <AdminLayout>
-                  <PlatformUsersPage />
-                </AdminLayout>
-              </AdminProtectedRoute>
-            } />
-            <Route path="/admin/questions" element={
-              <AdminProtectedRoute>
-                <AdminLayout>
-                  <QuestionBankPage />
-                </AdminLayout>
-              </AdminProtectedRoute>
-            } />
-            <Route path="/admin/analytics" element={
-              <AdminProtectedRoute>
-                <AdminLayout>
-                  <AdminAnalyticsPage />
-                </AdminLayout>
-              </AdminProtectedRoute>
-            } />
-            <Route path="/admin/competitions" element={
-              <AdminProtectedRoute>
-                <AdminLayout>
-                  <AdminCompetitionsPage />
-                </AdminLayout>
-              </AdminProtectedRoute>
-            } />
-            <Route path="/admin/reports" element={
-              <AdminProtectedRoute>
-                <AdminLayout>
-                  <AdminReportsPage />
-                </AdminLayout>
-              </AdminProtectedRoute>
-            } />
-            <Route path="/admin/settings" element={
-              <AdminProtectedRoute>
-                <AdminLayout>
-                  <AdminSettingsPage />
-                </AdminLayout>
-              </AdminProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/role-selection" element={<RoleSelectionPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/password-reset" element={<PasswordResetPage />} />
+              <Route path="/verify-email" element={<EmailVerificationPage />} />
+              <Route path="/onboarding/student" element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentOnboarding />
+                </ProtectedRoute>
+              } />
+              <Route path="/onboarding/parent" element={
+                <ProtectedRoute requiredRole="parent">
+                  <ParentOnboarding />
+                </ProtectedRoute>
+              } />
+              <Route path="/onboarding/school" element={
+                <ProtectedRoute requiredRole="school">
+                  <SchoolOnboarding />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/student" element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentLayout>
+                    <StudentDashboardOverview />
+                  </StudentLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/student/practice" element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentLayout>
+                    <StudentPractice />
+                  </StudentLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/student/assignments" element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentLayout>
+                    <StudentAssignments />
+                  </StudentLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/student/progress" element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentLayout>
+                    <StudentProgressPage />
+                  </StudentLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/student/leaderboard" element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentLayout>
+                    <StudentLeaderboardPage />
+                  </StudentLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/parent" element={
+                <ProtectedRoute requiredRole="parent">
+                  <ParentDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/school" element={
+                <ProtectedRoute requiredRole="school">
+                  <SchoolDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/quiz" element={
+                <ProtectedRoute>
+                  <QuizPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/subject-analytics" element={
+                <ProtectedRoute>
+                  <SubjectAnalytics />
+                </ProtectedRoute>
+              } />
+              {/* Admin Routes */}
+              <Route path="/admin/login" element={<AdminLoginPage />} />
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsersPage />} />
+                <Route path="platform-users" element={<PlatformUsersPage />} />
+                <Route path="questions" element={<QuestionBankPage />} />
+                <Route path="analytics" element={<AdminAnalyticsPage />} />
+                <Route path="competitions" element={<AdminCompetitionsPage />} />
+                <Route path="reports" element={<AdminReportsPage />} />
+                <Route path="settings" element={<AdminSettingsPage />} />
+              </Route>
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>

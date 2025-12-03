@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
     LayoutDashboard,
     Users,
@@ -11,28 +12,89 @@ import {
     LogOut,
     Menu,
     X,
-    Shield
+    Shield,
+    Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/hooks/useAuth";
 
-interface AdminLayoutProps {
-    children: React.ReactNode;
-}
-
-export const AdminLayout = ({ children }: AdminLayoutProps) => {
+export const AdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+    const { user, loading: authLoading, signOut } = useAuth();
+
+    const { data: isAuthorized, isLoading: isCheckingRole } = useQuery({
+        queryKey: ["admin-auth", user?.id],
+        queryFn: async () => {
+            if (!user) return false;
+
+            // Check if email is verified
+            if (!user.email_confirmed_at) {
+                navigate("/verify-email");
+                return false;
+            }
+
+            // Check if user has admin role
+            const { data: roleData } = await supabase
+                .from("user_roles")
+                .select("role")
+                .eq("user_id", user.id)
+                .eq("role", "admin" as any)
+                .maybeSingle();
+
+            if (!roleData) {
+                // User doesn't have admin role - redirect to their appropriate dashboard
+                const { data: userRole } = await supabase
+                    .from("user_roles")
+                    .select("role")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+
+                if (userRole?.role === "student") {
+                    navigate("/dashboard/student");
+                } else if (userRole?.role === "parent") {
+                    navigate("/dashboard/parent");
+                } else if (userRole?.role === "school") {
+                    navigate("/dashboard/school");
+                } else {
+                    navigate("/");
+                }
+                return false;
+            }
+
+            // Check admin record exists and is active
+            const { data: adminData } = await supabase
+                .from("admins" as any)
+                .select("id, is_active")
+                .eq("user_id", user.id)
+                .maybeSingle() as any;
+
+            if (!adminData || !adminData.is_active) {
+                navigate("/");
+                return false;
+            }
+
+            return true;
+        },
+        enabled: !!user,
+        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    });
+
+    useEffect(() => {
+        if (!authLoading && !user) {
+            navigate("/admin/login");
+        }
+    }, [authLoading, user, navigate]);
 
     const handleLogout = async () => {
         try {
-            await supabase.auth.signOut();
+            await signOut();
             toast.success("Logged out successfully");
-            navigate("/");
         } catch (error) {
             console.error("Logout error:", error);
             toast.error("Failed to log out");
@@ -56,6 +118,18 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         }
         return location.pathname.startsWith(href);
     };
+
+    if (authLoading || isCheckingRole) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (!isAuthorized) {
+        return null;
+    }
 
     return (
         <div className="min-h-screen bg-background">
@@ -101,8 +175,8 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                                     to={item.href}
                                     onClick={() => setSidebarOpen(false)}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${active
-                                            ? "bg-primary text-primary-foreground shadow-sm"
-                                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                         }`}
                                 >
                                     <Icon size={20} />
@@ -143,7 +217,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
             {/* Main Content */}
             <main className="lg:pl-64 pt-16 lg:pt-0">
                 <div className="p-6 lg:p-8">
-                    {children}
+                    <Outlet />
                 </div>
             </main>
         </div>
