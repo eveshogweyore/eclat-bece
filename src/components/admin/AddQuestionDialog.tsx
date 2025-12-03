@@ -42,7 +42,7 @@ const formSchema = z.object({
     questionType: z.enum(["standard", "comprehension"]),
     passageId: z.string().optional(),
     subject: z.string().min(1, "Subject is required"),
-    topic: z.string().optional(),
+    topic: z.string().min(1, "Topic is required"),
     questionText: z.string().min(1, "Question text is required"),
     explanation: z.string().optional(),
     difficulty: z.enum(["easy", "medium", "hard"]),
