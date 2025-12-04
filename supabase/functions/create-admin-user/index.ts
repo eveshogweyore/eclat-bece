@@ -32,26 +32,24 @@ serve(async (req) => {
 
         const { token, password } = await req.json() as CreateAdminUserRequest
 
-        // 1. Validate invitation
-        const { data: invitation, error: invitationError } = await supabaseClient
-            .from('admin_invitations')
-            .select('*')
-            .eq('token', token)
-            .eq('status', 'pending')
-            .single()
+        // 1. Validate invitation using RPC (bypasses RLS)
+        const { data: invitationResult, error: invitationError } = await supabaseClient
+            .rpc('get_invitation_details', { _token: token })
 
-        if (invitationError || !invitation) {
-            throw new Error('Invalid or expired invitation')
+        if (invitationError) {
+            throw new Error(`Failed to fetch invitation: ${invitationError.message}`)
         }
 
-        // Check expiration
-        if (new Date(invitation.expires_at) < new Date()) {
-            throw new Error('Invitation has expired')
+        const result = invitationResult as any
+        if (!result.success || !result.invitation) {
+            throw new Error(result.error || 'Invalid or expired invitation')
         }
+
+        const invitation = result.invitation
 
         // 2. Check if email already exists
         const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
-        const emailExists = existingUser.users.some(u => u.email === invitation.target_email)
+        const emailExists = existingUser.users.some((u: any) => u.email === invitation.target_email)
 
         if (emailExists) {
             throw new Error('Email already registered')
@@ -127,7 +125,7 @@ serve(async (req) => {
                 status: 'accepted',
                 accepted_at: new Date().toISOString()
             })
-            .eq('id', invitation.id)
+            .eq('token', token)
 
         if (updateError) {
             console.error('Error updating invitation status:', updateError)
@@ -141,7 +139,7 @@ serve(async (req) => {
                 _resource_type: 'admin',
                 _resource_id: adminRecord.id,
                 _details: {
-                    invitation_id: invitation.id,
+                    invitation_token: token,
                     new_admin_email: invitation.target_email,
                     is_super_admin: invitation.is_super_admin
                 }
