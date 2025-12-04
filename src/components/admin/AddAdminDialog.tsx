@@ -57,68 +57,53 @@ export function AddAdminDialog({ onSuccess }: AddAdminDialogProps) {
         setLoading(true);
 
         try {
-            // 1. Find the user by email
-            const { data: profiles, error: profileError } = await supabase
+            // 1. Check if email already exists in the system (reject if found)
+            const { data: existingProfile, error: profileError } = await supabase
                 .from("profiles")
-                .select("id, email")
+                .select("id")
                 .eq("email", values.email)
-                .limit(1);
+                .maybeSingle();
 
             if (profileError) throw profileError;
 
-            if (!profiles || profiles.length === 0) {
-                toast.error("User not found. They must register an account first.");
+            if (existingProfile) {
+                toast.error("This email is already registered. Admin invitations are only for new users.");
                 setLoading(false);
                 return;
             }
 
-            const targetUserId = profiles[0].id;
-
-            // 2. Check if user is already an admin
-            const { data: existingAdmin } = await supabase
-                .from("admins")
-                .select("id")
-                .eq("user_id", targetUserId)
-                .maybeSingle();
-
-            if (existingAdmin) {
-                toast.error("This user is already an admin.");
-                setLoading(false);
-                return;
-            }
-
-            // 3. Check for existing pending invitation
+            // 2. Check for existing pending invitation for this email
             const { data: existingInvitation } = await supabase
                 .from("admin_invitations" as any)
                 .select("id, status, expires_at")
-                .eq("target_user_id", targetUserId)
+                .eq("target_email", values.email)
                 .eq("status", "pending")
                 .maybeSingle();
 
             if (existingInvitation) {
                 const expiresAt = new Date(existingInvitation.expires_at);
                 if (expiresAt > new Date()) {
-                    toast.error("An active invitation already exists for this user.");
+                    toast.error("An active invitation already exists for this email.");
                     setLoading(false);
                     return;
                 }
             }
 
-            // 4. Generate invitation token
+            // 3. Generate invitation token
             const { data: tokenData, error: tokenError } = await supabase
                 .rpc('generate_invitation_token' as any);
 
             if (tokenError) throw tokenError;
             const token = tokenData as string;
 
-            // 5. Create invitation
+            // 4. Create invitation
             const expiresAt = new Date();
             expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
 
             const { error: invitationError } = await supabase
                 .from("admin_invitations" as any)
                 .insert({
-                    target_user_id: targetUserId,
+                    target_email: values.email,
                     invited_by: (await supabase.rpc('get_admin_id', { _user_id: user.id })).data,
                     token: token,
                     full_name: values.fullName,
@@ -128,7 +113,7 @@ export function AddAdminDialog({ onSuccess }: AddAdminDialogProps) {
 
             if (invitationError) throw invitationError;
 
-            // 6. Send invitation email via Edge Function
+            // 5. Send invitation email via Edge Function
             try {
                 const { data: invitationRecord } = await supabase
                     .from("admin_invitations" as any)
@@ -165,7 +150,7 @@ export function AddAdminDialog({ onSuccess }: AddAdminDialogProps) {
             });
 
             // 8. Generate invitation link
-            const invitationLink = `${window.location.origin}/admin/accept-invitation/${token}`;
+            const invitationLink = `${window.location.origin}/admin/setup/${token}`;
 
             // Show success with link
             toast.success("Admin invitation sent successfully!");
@@ -197,7 +182,7 @@ export function AddAdminDialog({ onSuccess }: AddAdminDialogProps) {
                 <DialogHeader>
                     <DialogTitle>Send Admin Invitation</DialogTitle>
                     <DialogDescription>
-                        Send an invitation to grant admin privileges. The user must accept within 24 hours.
+                        Send an invitation to create a new admin account. Only fresh email addresses (not already registered) are accepted.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -212,7 +197,7 @@ export function AddAdminDialog({ onSuccess }: AddAdminDialogProps) {
                                         <Input placeholder="user@example.com" {...field} />
                                     </FormControl>
                                     <FormDescription>
-                                        The email address of the registered user.
+                                        Email address for the new admin (must not be registered yet).
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>

@@ -41,22 +41,13 @@ serve(async (req) => {
         full_name,
         is_super_admin,
         expires_at,
-        target_user_id,
+        target_email,
         invited_by
       `)
       .eq('id', invitationId)
       .single()
 
     if (invitationError) throw invitationError
-
-    // Get target user's email
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('email')
-      .eq('id', invitation.target_user_id)
-      .single()
-
-    if (profileError) throw profileError
 
     // Get inviter's name
     const { data: inviter, error: inviterError } = await supabaseClient
@@ -68,7 +59,8 @@ serve(async (req) => {
     if (inviterError) throw inviterError
 
     // Generate invitation link
-    const invitationLink = `${Deno.env.get('PUBLIC_SITE_URL')}/admin/accept-invitation/${invitation.token}`
+    const siteUrl = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://eclat-bece.vercel.app'
+    const invitationLink = `${siteUrl}/admin/setup/${invitation.token}`
 
     // Format expiration date
     const expiresAt = new Date(invitation.expires_at)
@@ -90,7 +82,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'Éclat <noreply@bece.eclatapp.xyz>',
-        to: [profile.email],
+        to: [invitation.target_email],
         subject: 'You\'ve been invited to join Éclat Platform as an Administrator',
         html: `
 <!DOCTYPE html>
@@ -112,6 +104,10 @@ serve(async (req) => {
       <strong>${inviter.full_name}</strong> has invited you to become an administrator on the <strong>Éclat Platform</strong>.
     </p>
     
+    <p style="font-size: 14px; margin-bottom: 20px; color: #6b7280;">
+      This invitation is for creating a <strong>new admin account</strong>. Click the button below to set up your password and activate your account.
+    </p>
+    
     <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #667eea;">
       <p style="margin: 0 0 10px 0; font-size: 14px; color: #6b7280;"><strong>Role:</strong></p>
       <p style="margin: 0; font-size: 16px;">${invitation.is_super_admin ? '🔐 Super Administrator' : '👤 Administrator'}</p>
@@ -119,7 +115,7 @@ serve(async (req) => {
     
     <div style="text-align: center; margin: 30px 0;">
       <a href="${invitationLink}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-        Accept Invitation
+        Set Up Your Admin Account
       </a>
     </div>
     

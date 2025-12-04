@@ -29,7 +29,7 @@ import { StudentLayout } from "./components/StudentLayout";
 import { AdminLayout } from "./components/AdminLayout";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLoginPage from "./pages/AdminLoginPage";
-import AcceptInvitationPage from "./pages/AcceptInvitationPage";
+import AdminPasswordSetupPage from "./pages/AdminPasswordSetupPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import PlatformUsersPage from "./pages/PlatformUsersPage";
 import QuestionBankPage from "./pages/QuestionBankPage";
@@ -129,7 +129,7 @@ const App = () => (
               } />
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLoginPage />} />
-              <Route path="/admin/accept-invitation/:token" element={<AcceptInvitationPage />} />
+              <Route path="/admin/setup/:token" element={<AdminPasswordSetupPage />} />
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsersPage />} />
