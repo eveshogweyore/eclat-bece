@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Trophy, TrendingUp, Target, Flame, LogOut, Settings } from "lucide-react";
+import { BookOpen, Trophy, TrendingUp, Target, Flame, LogOut, Settings, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CompetitionLeaderboards } from "@/components/CompetitionLeaderboards";
 import { PracticeAssignment } from "@/components/PracticeAssignment";
@@ -7,6 +7,13 @@ import { ProgressReport } from "@/components/ProgressReport";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,20 +31,20 @@ export default function StudentDashboard() {
   const [classYear, setClassYear] = useState<string | null>(null);
   const [subjectCounts, setSubjectCounts] = useState<Record<string, number>>({});
   const [currentStreak, setCurrentStreak] = useState(0);
-  
+
   const logo = theme === "dark" ? logoLight : logoDark;
 
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user) return;
-      
+
       // Fetch user name
       const { data: profileData } = await supabase
         .from("profiles")
         .select("full_name")
         .eq("id", user.id)
         .single();
-      
+
       if (profileData?.full_name) {
         const firstName = profileData.full_name.split(" ")[0];
         setUserName(firstName);
@@ -49,7 +56,7 @@ export default function StudentDashboard() {
         .select("class_year")
         .eq("user_id", user.id)
         .single();
-      
+
       if (studentData?.class_year) {
         setClassYear(studentData.class_year);
       }
@@ -68,8 +75,8 @@ export default function StudentDashboard() {
       if (!studentData?.class_year) return;
 
       // Determine which table to query based on class year
-      const tableName = studentData.class_year === 'year_6' 
-        ? 'quiz_questions_year6' 
+      const tableName = studentData.class_year === 'year_6'
+        ? 'quiz_questions_year6'
         : 'quiz_questions_year9';
 
       const { data, error } = await supabase
@@ -137,42 +144,74 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-accent-light/20">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src={logo} alt="Éclat Logo" className="h-16 w-auto cursor-pointer" onClick={() => navigate("/")} />
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
-              currentStreak === 0 
-                ? 'bg-destructive/20' 
-                : currentStreak >= 7 
-                ? 'bg-green-500/20' 
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          {/* Logo & Streak */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <img
+              src={logo}
+              alt="Éclat Logo"
+              className="h-10 sm:h-12 md:h-16 w-auto cursor-pointer"
+              onClick={() => navigate("/")}
+            />
+            {/* Streak - Hide on very small screens */}
+            <div className={`hidden xs:flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full ${currentStreak === 0
+              ? 'bg-destructive/20'
+              : currentStreak >= 7
+                ? 'bg-green-500/20'
                 : 'bg-accent-light'
-            }`}>
-              <Flame className={`${
-                currentStreak === 0 
-                  ? 'text-destructive' 
-                  : currentStreak >= 7 
-                  ? 'text-green-600' 
+              }`}>
+              <Flame className={`${currentStreak === 0
+                ? 'text-destructive'
+                : currentStreak >= 7
+                  ? 'text-green-600'
                   : 'text-accent'
-              }`} size={16} />
-              <span className={`text-sm font-semibold ${
-                currentStreak === 0 
-                  ? 'text-destructive' 
-                  : currentStreak >= 7 
-                  ? 'text-green-600' 
+                }`} size={14} />
+              <span className={`text-xs sm:text-sm font-semibold ${currentStreak === 0
+                ? 'text-destructive'
+                : currentStreak >= 7
+                  ? 'text-green-600'
                   : 'text-accent'
-              }`}>{currentStreak}-day streak!</span>
+                }`}>{currentStreak}</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Button variant="ghost" size="icon">
-              <Settings size={20} />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut size={20} />
-            </Button>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            {/* Desktop: Show all buttons */}
+            <div className="hidden md:flex items-center gap-4">
+              <ThemeToggle />
+              <Button variant="ghost" size="icon" className="h-10 w-10">
+                <Settings size={20} />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={signOut}>
+                <LogOut size={20} />
+              </Button>
+            </div>
+
+            {/* Mobile: Dropdown menu + Theme toggle */}
+            <div className="md:hidden flex items-center gap-2">
+              <ThemeToggle />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-10 w-10">
+                    <Menu size={20} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate("/settings")}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </header>
@@ -189,38 +228,38 @@ export default function StudentDashboard() {
           <p className="text-muted-foreground">Ready to ace your exams? You're 2 ranks away from Top 10 nationally!</p>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 animate-slide-up">
+        {/* Quick Stats - Mobile Optimized */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8 animate-slide-up">
           <Card className="border-2 hover:shadow-hover transition-all">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Questions</p>
-                  <p className="text-3xl font-bold text-primary">847</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Total Questions</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-primary">847</p>
                 </div>
-                <Target className="text-primary" size={32} />
+                <Target className="text-primary" size={24} />
               </div>
             </CardContent>
           </Card>
           <Card className="border-2 hover:shadow-hover transition-all">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Average Score</p>
-                  <p className="text-3xl font-bold text-accent">78%</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Average Score</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-accent">78%</p>
                 </div>
-                <TrendingUp className="text-accent" size={32} />
+                <TrendingUp className="text-accent" size={24} />
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-primary-light/20 to-background border-primary-light/30 shadow-soft hover:shadow-hover transition-all">
-            <CardContent className="p-6">
+          <Card className="bg-gradient-to-br from-primary-light/20 to-background border-primary-light/30 shadow-soft hover:shadow-hover transition-all sm:col-span-2 md:col-span-1">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Rank This Month</p>
-                  <p className="text-3xl font-bold text-primary">#12</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Rank This Month</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-primary">#12</p>
                 </div>
-                <Trophy className="text-accent" size={32} />
+                <Trophy className="text-accent" size={24} />
               </div>
             </CardContent>
           </Card>
@@ -250,27 +289,30 @@ export default function StudentDashboard() {
                     {subjects.map((subject, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/30 hover:bg-primary-light/20 hover:border-primary/30 hover:shadow-soft transition-all cursor-pointer"
+                        className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg bg-muted/30 border border-border/30 hover:bg-primary-light/20 hover:border-primary/30 hover:shadow-soft transition-all cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-3xl">{subject.icon}</span>
-                          <div>
-                            <h4 className="font-semibold text-foreground">{subject.name}</h4>
-                            <p className="text-sm text-muted-foreground">{subject.questions} questions</p>
+                          <span className="text-2xl sm:text-3xl">{subject.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-foreground truncate">{subject.name}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-xs sm:text-sm text-muted-foreground">
+                                {subject.questions} questions
+                              </p>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-primary-light text-primary font-medium hidden sm:inline-block">
+                                {subject.difficulty}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                         <div className="flex items-center gap-3">
-                           <span className="text-xs px-2 py-1 rounded-full bg-primary-light text-primary font-medium">
-                             {subject.difficulty}
-                           </span>
-                           <Button 
-                             variant="hero" 
-                             size="sm" 
-                             onClick={() => navigate(`/quiz?subject=${encodeURIComponent(subject.name)}`)}
-                           >
-                             Start Practice
-                           </Button>
-                         </div>
+                        <Button
+                          variant="hero"
+                          size="sm"
+                          className="w-full sm:w-auto sm:min-w-[140px] min-h-[44px]"
+                          onClick={() => navigate(`/quiz?subject=${encodeURIComponent(subject.name)}`)}
+                        >
+                          Start Practice
+                        </Button>
                       </div>
                     ))}
                   </TabsContent>
@@ -278,16 +320,25 @@ export default function StudentDashboard() {
                     {topics.map((topic, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/30 hover:bg-primary-light/20 hover:border-primary/30 hover:shadow-soft transition-all cursor-pointer"
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg bg-muted/30 border border-border/30 hover:bg-primary-light/20 hover:border-primary/30 hover:shadow-soft transition-all cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-3xl">{topic.icon}</span>
-                          <div>
-                            <h4 className="font-semibold text-foreground">{topic.name}</h4>
-                            <p className="text-sm text-muted-foreground">{topic.subject} • {topic.questions} questions</p>
+                          <span className="text-2xl sm:text-3xl">{topic.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-foreground truncate">{topic.name}</h4>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              {topic.subject} • {topic.questions} questions
+                            </p>
                           </div>
                         </div>
-                        <Button variant="hero" size="sm" onClick={() => navigate("/quiz")}>Start Practice</Button>
+                        <Button
+                          variant="hero"
+                          size="sm"
+                          className="w-full sm:w-auto sm:min-w-[140px] min-h-[44px]"
+                          onClick={() => navigate("/quiz")}
+                        >
+                          Start Practice
+                        </Button>
                       </div>
                     ))}
                   </TabsContent>
@@ -311,7 +362,7 @@ export default function StudentDashboard() {
 
             {/* Competition Leaderboards */}
             <div className="animate-scale-in" style={{ animationDelay: "0.3s" }}>
-              <CompetitionLeaderboards 
+              <CompetitionLeaderboards
                 showCurrentUserPosition={true}
                 currentUserName="Ada"
                 currentUserRanks={{ monthly: 12, annual: 8 }}
@@ -352,9 +403,8 @@ export default function StudentDashboard() {
                     {badges.map((badge, idx) => (
                       <div
                         key={idx}
-                        className={`flex items-center gap-2 p-2 rounded border ${
-                          badge.earned ? "bg-accent-light border-accent" : "bg-muted border-border opacity-50"
-                        }`}
+                        className={`flex items-center gap-2 p-2 rounded border ${badge.earned ? "bg-accent-light border-accent" : "bg-muted border-border opacity-50"
+                          }`}
                       >
                         <span className="text-lg">{badge.icon}</span>
                         <span className="text-xs font-medium">{badge.name}</span>
