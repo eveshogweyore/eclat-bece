@@ -31,93 +31,131 @@ export default function StudentDashboard() {
   const [classYear, setClassYear] = useState<string | null>(null);
   const [subjectCounts, setSubjectCounts] = useState<Record<string, number>>({});
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const logo = theme === "dark" ? logoLight : logoDark;
 
+  const fetchUserData = async () => {
+    if (!user) return;
+
+    // Fetch user name
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+
+    if (profileData?.full_name) {
+      const firstName = profileData.full_name.split(" ")[0];
+      setUserName(firstName);
+    }
+
+    // Fetch student's class year
+    const { data: studentData } = await supabase
+      .from("students")
+      .select("class_year")
+      .eq("user_id", user.id)
+      .single();
+
+    if (studentData?.class_year) {
+      setClassYear(studentData.class_year);
+    }
+  };
+
+  const fetchQuestionCounts = async () => {
+    if (!user) return;
+
+    // First get the student's class year
+    const { data: studentData } = await supabase
+      .from("students")
+      .select("class_year")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!studentData?.class_year) return;
+
+    // Determine which table to query based on class year
+    const tableName = studentData.class_year === 'year_6'
+      ? 'quiz_questions_year6'
+      : 'quiz_questions_year9';
+
+    const { data, error } = await supabase
+      .from(tableName as any)
+      .select("subject");
+
+    if (data && !error) {
+      const counts = data.reduce((acc: Record<string, number>, curr: any) => {
+        acc[curr.subject] = (acc[curr.subject] || 0) + 1;
+        return acc;
+      }, {});
+      setSubjectCounts(counts);
+    }
+  };
+
+  const fetchStreak = async () => {
+    if (!user) return;
+
+    const { data: studentData } = await supabase
+      .from("students")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!studentData?.id) return;
+
+    const { data: streakData } = await supabase
+      .from("student_streaks")
+      .select("current_streak")
+      .eq("student_id", studentData.id)
+      .maybeSingle();
+
+    if (streakData) {
+      setCurrentStreak(streakData.current_streak);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      fetchUserData(),
+      fetchQuestionCounts(),
+      fetchStreak()
+    ]);
+    setRefreshing(false);
+  };
+
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user) return;
-
-      // Fetch user name
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .single();
-
-      if (profileData?.full_name) {
-        const firstName = profileData.full_name.split(" ")[0];
-        setUserName(firstName);
-      }
-
-      // Fetch student's class year
-      const { data: studentData } = await supabase
-        .from("students")
-        .select("class_year")
-        .eq("user_id", user.id)
-        .single();
-
-      if (studentData?.class_year) {
-        setClassYear(studentData.class_year);
-      }
-    };
-
-    const fetchQuestionCounts = async () => {
-      if (!user) return;
-
-      // First get the student's class year
-      const { data: studentData } = await supabase
-        .from("students")
-        .select("class_year")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!studentData?.class_year) return;
-
-      // Determine which table to query based on class year
-      const tableName = studentData.class_year === 'year_6'
-        ? 'quiz_questions_year6'
-        : 'quiz_questions_year9';
-
-      const { data, error } = await supabase
-        .from(tableName as any)
-        .select("subject");
-
-      if (data && !error) {
-        const counts = data.reduce((acc: Record<string, number>, curr: any) => {
-          acc[curr.subject] = (acc[curr.subject] || 0) + 1;
-          return acc;
-        }, {});
-        setSubjectCounts(counts);
-      }
-    };
-
-    const fetchStreak = async () => {
-      if (!user) return;
-
-      const { data: studentData } = await supabase
-        .from("students")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (!studentData?.id) return;
-
-      const { data: streakData } = await supabase
-        .from("student_streaks")
-        .select("current_streak")
-        .eq("student_id", studentData.id)
-        .maybeSingle();
-
-      if (streakData) {
-        setCurrentStreak(streakData.current_streak);
-      }
-    };
-
     fetchUserData();
     fetchQuestionCounts();
     fetchStreak();
   }, [user]);
+
+  // Pull to refresh logic
+  useEffect(() => {
+    let startY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      startY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const currentY = e.touches[0].clientY;
+      const diff = currentY - startY;
+
+      // Only trigger if at top of page and pulling down significantly
+      if (window.scrollY === 0 && diff > 100 && !refreshing) {
+        handleRefresh();
+      }
+    };
+
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchmove', handleTouchMove);
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [refreshing]);
 
   const subjects = [
     { name: "Mathematics", icon: "📐", difficulty: "Core Subject", questions: subjectCounts["Mathematics"] || 0 },
@@ -143,7 +181,14 @@ export default function StudentDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-accent-light/20">
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-accent-light/20 overflow-hidden">
+      {refreshing && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-primary text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+          Refreshing...
+        </div>
+      )}
+
       {/* Header - Mobile Optimized */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -216,20 +261,25 @@ export default function StudentDashboard() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8 animate-fade-in">
-          <h2 className="text-3xl font-bold text-foreground mb-2">Welcome back, {userName}! 🎉</h2>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Welcome Section - Mobile Optimized */}
+        <div className="mb-6 sm:mb-8 md:animate-fade-in">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+            Welcome back, {userName}! <span className="inline-block">🎉</span>
+          </h2>
           {classYear && (
-            <p className="text-lg font-semibold text-primary mb-2">
+            <p className="text-base sm:text-lg font-semibold text-primary mb-2">
               {classYear === 'year_6' ? 'Year 6 • Common Entrance' : 'Year 9 • BECE'}
             </p>
           )}
-          <p className="text-muted-foreground">Ready to ace your exams? You're 2 ranks away from Top 10 nationally!</p>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Ready to ace your exams? <span className="hidden sm:inline">You're 2 ranks away from Top 10 nationally!</span>
+            <span className="sm:hidden">Keep practicing!</span>
+          </p>
         </div>
 
         {/* Quick Stats - Mobile Optimized */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8 animate-slide-up">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8 md:animate-slide-up">
           <Card className="border-2 hover:shadow-hover transition-all">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
@@ -267,11 +317,11 @@ export default function StudentDashboard() {
 
         <Separator className="my-10 opacity-[0.07]" />
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-10">
+          <div className="lg:col-span-2 space-y-6 lg:space-y-10">
             {/* Practice Section */}
-            <Card className="bg-gradient-to-br from-card to-background border-border/50 shadow-soft animate-scale-in">
+            <Card className="bg-gradient-to-br from-card to-background border-border/50 shadow-soft md:animate-scale-in max-w-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="text-primary" size={24} />
@@ -281,9 +331,15 @@ export default function StudentDashboard() {
               </CardHeader>
               <CardContent>
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-2 mb-6">
-                    <TabsTrigger value="subject">By Subject</TabsTrigger>
-                    <TabsTrigger value="topic">By Topic</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
+                    <TabsTrigger value="subject" className="text-xs sm:text-sm">
+                      <BookOpen className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="hidden xs:inline">By </span>Subject
+                    </TabsTrigger>
+                    <TabsTrigger value="topic" className="text-xs sm:text-sm">
+                      <Target className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="hidden xs:inline">By </span>Topic
+                    </TabsTrigger>
                   </TabsList>
                   <TabsContent value="subject" className="space-y-3">
                     {subjects.map((subject, index) => (
@@ -347,8 +403,36 @@ export default function StudentDashboard() {
             </Card>
 
             {/* Practice Assignments */}
-            <div className="animate-scale-in" style={{ animationDelay: "0.1s" }}>
+            <div className="md:animate-scale-in" style={{ animationDelay: "0.1s" }}>
               <PracticeAssignment onStartAssignment={() => navigate("/quiz")} />
+            </div>
+
+            {/* Mobile Progress Summary - Visible on mobile/tablet */}
+            <div className="lg:hidden md:animate-scale-in" style={{ animationDelay: "0.15s" }}>
+              <Card className="border-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <TrendingUp className="text-accent" size={18} />
+                    Quick Progress Stats
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex gap-1 h-12">
+                    {[85, 78, 82, 90, 88].map((score, idx) => (
+                      <div key={idx} className="flex-1 bg-muted rounded overflow-hidden">
+                        <div
+                          className="bg-gradient-accent w-full"
+                          style={{ height: `${score}%`, transition: "all 0.3s" }}
+                        ></div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span>Last 5 sessions</span>
+                    <span className="font-medium text-accent">↑ 12% improvement</span>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <Separator className="my-8 opacity-[0.05]" />
@@ -361,7 +445,7 @@ export default function StudentDashboard() {
             <Separator className="my-8 opacity-[0.05]" />
 
             {/* Competition Leaderboards */}
-            <div className="animate-scale-in" style={{ animationDelay: "0.3s" }}>
+            <div className="md:animate-scale-in" style={{ animationDelay: "0.3s" }}>
               <CompetitionLeaderboards
                 showCurrentUserPosition={true}
                 currentUserName="Ada"
@@ -370,8 +454,8 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Sidebar - Desktop Only for detailed view */}
+          <div className="hidden lg:block space-y-6">
             {/* Progress Tracking */}
             <Card className="border-2 animate-scale-in" style={{ animationDelay: "0.2s" }}>
               <CardHeader>
@@ -386,12 +470,12 @@ export default function StudentDashboard() {
                     <span className="text-muted-foreground">Last 5 Sessions</span>
                     <span className="font-semibold text-accent">↑ 12%</span>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 h-24">
                     {[85, 78, 82, 90, 88].map((score, idx) => (
-                      <div key={idx} className="flex-1 bg-muted rounded overflow-hidden">
+                      <div key={idx} className="flex-1 bg-muted rounded overflow-hidden flex items-end">
                         <div
-                          className="bg-gradient-accent"
-                          style={{ height: `${score}px`, transition: "all 0.3s" }}
+                          className="bg-gradient-accent w-full"
+                          style={{ height: `${score}%`, transition: "all 0.3s" }}
                         ></div>
                       </div>
                     ))}

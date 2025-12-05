@@ -78,21 +78,35 @@ export const CompetitionLeaderboards = ({
             key={index}
             className={`border-2 ${student.rank <= 3 ? "border-accent" : ""} hover:shadow-hover transition-all`}
           >
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-primary-light rounded-full flex items-center justify-center">
-                  <span className="text-2xl">{student.avatar}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xl font-bold text-primary">#{student.rank}</span>
-                    <h4 className="text-lg font-semibold text-foreground truncate">{student.name}</h4>
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-start sm:items-center gap-3">
+                {/* Avatar with rank badge */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-light rounded-full flex items-center justify-center">
+                    <span className="text-xl sm:text-2xl">{student.avatar}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">{student.school}</p>
+                  <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${student.rank <= 3 ? "bg-accent text-white" : "bg-primary text-white"
+                    }`}>
+                    <span className="text-[10px] font-bold">#{student.rank}</span>
+                  </div>
                 </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm sm:text-base font-semibold text-foreground truncate">
+                    {student.name}
+                  </h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
+                    {student.school}
+                  </p>
+                </div>
+
+                {/* Points */}
                 <div className="text-right flex-shrink-0">
-                  <div className="text-xl font-bold text-primary">{student.points.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">points</div>
+                  <div className="text-base sm:text-lg font-bold text-primary">
+                    {student.points.toLocaleString()}
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">pts</div>
                 </div>
               </div>
             </CardContent>
