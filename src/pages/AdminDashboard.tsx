@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, BookOpen, Trophy, TrendingUp, Activity, Shield, ChevronLeft, ChevronRight, UserPlus, UserMinus, Edit, Trash2, Mail, Upload } from "lucide-react";
+import { Users, BookOpen, Trophy, TrendingUp, Activity, Shield, ChevronLeft, ChevronRight, UserPlus, UserMinus, Edit, Trash2, Mail, Upload, Search, Download, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
 
 interface PlatformStats {
@@ -44,13 +46,28 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [actionFilter, setActionFilter] = useState<string>("all");
+    const [resourceFilter, setResourceFilter] = useState<string>("all");
     const ITEMS_PER_PAGE = 10;
 
     useEffect(() => {
         fetchAdminData();
         fetchPlatformStats();
+    }, [user]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setCurrentPage(1); // Reset to first page when filters change
+            fetchRecentActivity();
+        }, 300); // Debounce search
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, actionFilter, resourceFilter]);
+
+    useEffect(() => {
         fetchRecentActivity();
-    }, [user, currentPage]);
+    }, [currentPage]);
 
     const fetchAdminData = async () => {
         if (!user) return;
@@ -233,6 +250,16 @@ export default function AdminDashboard() {
             color = "text-red-600";
             bgColor = "bg-red-100 dark:bg-red-900/30";
             description = `deleted ${friendlyResourceType === 'admin invitation' ? 'an' : 'a'} ${friendlyResourceType}`;
+        } else if (action.includes("deactivate")) {
+            icon = UserMinus;
+            color = "text-orange-600";
+            bgColor = "bg-orange-100 dark:bg-orange-900/30";
+            description = `deactivated ${friendlyResourceType === 'admin invitation' ? 'an' : 'a'} ${friendlyResourceType}`;
+        } else if (action.includes("reactivate") || action.includes("activate")) {
+            icon = UserPlus;
+            color = "text-emerald-600";
+            bgColor = "bg-emerald-100 dark:bg-emerald-900/30";
+            description = `reactivated ${friendlyResourceType === 'admin invitation' ? 'an' : 'a'} ${friendlyResourceType}`;
         } else if (action.includes("update") || action.includes("edit") || action.includes("modify")) {
             icon = Edit;
             color = "text-blue-600";
@@ -367,8 +394,26 @@ export default function AdminDashboard() {
                                                     </p>
                                                     {activity.details && Object.keys(activity.details).length > 0 && (
                                                         <p className="text-sm text-muted-foreground mt-1">
-                                                            {activity.details.email && `Email: ${activity.details.email}`}
+                                                            {/* Admin-related details */}
+                                                            {activity.details.admin_name && `Admin: ${activity.details.admin_name}`}
+                                                            {activity.details.admin_email && ` (${activity.details.admin_email})`}
+
+                                                            {/* Invitation details */}
+                                                            {activity.details.target_user_email && `Email: ${activity.details.target_user_email}`}
+                                                            {activity.details.email && !activity.details.target_user_email && `Email: ${activity.details.email}`}
+
+                                                            {/* Question details */}
                                                             {activity.details.question_text && `Question: ${activity.details.question_text.substring(0, 50)}...`}
+                                                            {activity.details.subject && ` • Subject: ${activity.details.subject}`}
+                                                            {activity.details.difficulty && ` • ${activity.details.difficulty}`}
+
+                                                            {/* Passage details */}
+                                                            {activity.details.title && `Title: ${activity.details.title}`}
+                                                            {activity.details.passage_preview && ` • ${activity.details.passage_preview.substring(0, 50)}...`}
+
+                                                            {/* Status changes */}
+                                                            {activity.details.previous_status && activity.details.new_status &&
+                                                                ` • Status: ${activity.details.previous_status} → ${activity.details.new_status}`}
                                                         </p>
                                                     )}
                                                 </div>

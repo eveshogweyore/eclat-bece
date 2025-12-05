@@ -110,13 +110,37 @@ export default function AdminUsersPage() {
     };
 
     const toggleAdminStatus = async (adminId: string, currentStatus: boolean) => {
+        if (!user) return;
+
         try {
+            // Get admin details before update for logging
+            const adminToUpdate = admins.find(a => a.id === adminId);
+
             const { error } = await supabase
                 .from("admins" as any)
                 .update({ is_active: !currentStatus })
                 .eq("id", adminId);
 
             if (error) throw error;
+
+            // Log the action
+            try {
+                await supabase.rpc('log_admin_action', {
+                    _admin_id: (await supabase.rpc('get_admin_id', { _user_id: user.id })).data,
+                    _action: currentStatus ? 'deactivate_admin' : 'reactivate_admin',
+                    _resource_type: 'admin',
+                    _resource_id: adminId,
+                    _details: {
+                        admin_name: adminToUpdate?.full_name,
+                        admin_email: adminToUpdate?.email,
+                        is_super_admin: adminToUpdate?.is_super_admin,
+                        previous_status: currentStatus ? 'active' : 'inactive',
+                        new_status: currentStatus ? 'inactive' : 'active'
+                    }
+                });
+            } catch (logError) {
+                console.error('Error logging admin status change:', logError);
+            }
 
             toast.success(`Admin ${currentStatus ? 'deactivated' : 'activated'} successfully`);
             fetchAdmins();
