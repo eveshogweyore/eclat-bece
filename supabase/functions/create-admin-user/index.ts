@@ -32,28 +32,38 @@ serve(async (req) => {
 
         const { token, password } = await req.json() as CreateAdminUserRequest
 
+        console.log('Step 1: Validating invitation with token:', token?.substring(0, 10) + '...')
+
         // 1. Validate invitation using RPC (bypasses RLS)
         const { data: invitationResult, error: invitationError } = await supabaseClient
             .rpc('get_invitation_details', { _token: token })
 
         if (invitationError) {
+            console.error('Step 1 failed - RPC error:', invitationError)
             throw new Error(`Failed to fetch invitation: ${invitationError.message}`)
         }
 
+        console.log('Step 1: RPC result:', invitationResult)
+
         const result = invitationResult as any
         if (!result.success || !result.invitation) {
+            console.error('Step 1 failed - Invalid result:', result)
             throw new Error(result.error || 'Invalid or expired invitation')
         }
 
         const invitation = result.invitation
+        console.log('Step 2: Checking if email exists:', invitation.target_email)
 
         // 2. Check if email already exists
         const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
         const emailExists = existingUser.users.some((u: any) => u.email === invitation.target_email)
 
         if (emailExists) {
+            console.error('Step 2 failed - Email already exists')
             throw new Error('Email already registered')
         }
+
+        console.log('Step 3: Creating auth user...')
 
         // 3. Create auth user
         const { data: newUser, error: userError } = await supabaseAdmin.auth.admin.createUser({
@@ -70,21 +80,25 @@ serve(async (req) => {
             throw new Error(`Failed to create user: ${userError?.message}`)
         }
 
+        console.log('Step 4: Creating profile...')
+
         // 4. Create profile
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
             .insert({
                 id: newUser.user.id,
                 email: invitation.target_email,
-                full_name: invitation.full_name,
-                role: 'admin'
+                full_name: invitation.full_name
             })
 
         if (profileError) {
+            console.error('Step 4 failed - Profile error:', profileError)
             // Rollback user creation if profile fails
             await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
             throw new Error(`Failed to create profile: ${profileError.message}`)
         }
+
+        console.log('Step 5: Adding admin role...')
 
         // 5. Add admin role
         const { error: roleError } = await supabaseAdmin
