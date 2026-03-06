@@ -1,4 +1,4 @@
-import { Award, BookOpen, Target, MoreVertical, CreditCard, ChevronRight, Trash2, User, Key } from "lucide-react";
+import { Award, BookOpen, Target, MoreVertical, CreditCard, ChevronRight, Trash2, User, Key, Fingerprint } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ interface ChildOverviewCardProps {
     onUpgradePremium: (child: LinkedChild) => void;
     onDeleteChild: (child: LinkedChild) => void;
     onEditName: (child: LinkedChild) => void;
+    onEditUsername: (child: LinkedChild) => void;
     onChangePassword: (child: LinkedChild) => void;
 }
 
@@ -33,6 +34,7 @@ export function ChildOverviewCard({
     onUpgradePremium,
     onDeleteChild,
     onEditName,
+    onEditUsername,
     onChangePassword
 }: ChildOverviewCardProps) {
     const initials = child.profile.full_name?.charAt(0).toUpperCase() || "?";
@@ -64,27 +66,29 @@ export function ChildOverviewCard({
                                 >
                                     {child.profile.full_name || "Unknown"}
                                 </CardTitle>
-                                <div className="flex items-center gap-2 flex-nowrap overflow-hidden">
+                                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                                     {child.is_premium ? (
-                                        <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 uppercase font-black text-[10px] py-0.5">
+                                        <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 uppercase font-black text-[10px] py-0.5 whitespace-nowrap">
                                             Premium
                                         </Badge>
                                     ) : (
-                                        <Badge variant="outline" className="text-muted-foreground uppercase font-bold text-[10px] py-0.5">
+                                        <Badge variant="outline" className="text-muted-foreground uppercase font-bold text-[10px] py-0.5 whitespace-nowrap">
                                             Standard
                                         </Badge>
                                     )}
-                                    <span className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-black text-primary border border-primary/20 uppercase">
+                                    <span className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-black text-primary border border-primary/20 uppercase whitespace-nowrap">
                                         {child.class_year === "year_6" ? "Year 6" : child.class_year === "year_9" ? "Year 9" : "N/A"}
                                     </span>
-                                    <span className="text-[10px] font-mono text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-lg border border-border/50">
-                                        ID: {child.profile.unique_id}
-                                    </span>
-                                    {child.profile.username && (
-                                        <span className="text-[10px] font-mono text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-lg border border-border/50">
-                                            {child.profile.username}
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-[10px] font-mono text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-lg border border-border/50 whitespace-nowrap">
+                                            ID: {child.profile.unique_id}
                                         </span>
-                                    )}
+                                        {child.profile.username && (
+                                            <span className="text-[10px] font-mono text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-lg border border-border/50 truncate max-w-[120px]" title={child.profile.username}>
+                                                {child.profile.username}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -111,6 +115,13 @@ export function ChildOverviewCard({
                                 >
                                     <User size={14} />
                                     Edit Name
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="rounded-lg font-bold flex items-center gap-2"
+                                    onClick={() => onEditUsername(child)}
+                                >
+                                    <Fingerprint size={14} />
+                                    Edit Username
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     className="rounded-lg font-bold flex items-center gap-2"
@@ -241,7 +252,7 @@ export function ChildOverviewCard({
                         <p className="text-[11px] text-muted-foreground max-w-[200px] mx-auto leading-relaxed font-medium">
                             Real-time performance analytics will activate once practice sessions begin.
                         </p>
-                        <Button variant="outline" size="sm" className="mt-4 rounded-xl font-bold bg-background text-[10px] h-8" onClick={() => onAssignPractice(child)}>
+                        <Button variant="hero" size="sm" className="mt-4 rounded-xl font-black text-xs h-10 px-6 uppercase tracking-wider" onClick={() => onAssignPractice(child)}>
                             ASSIGN FIRST TASK
                         </Button>
                     </div>

@@ -1,5 +1,6 @@
 export interface QuizResult {
     id: string;
+    student_id?: string;
     subject: string;
     score: number;
     correct_answers: number;

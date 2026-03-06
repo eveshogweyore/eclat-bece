@@ -36,7 +36,7 @@ serve(async (req) => {
             });
         }
 
-        const { studentId, action, fullName, password } = await req.json();
+        const { studentId, action, fullName, password, username } = await req.json();
 
         if (!studentId || !action) {
             return new Response(JSON.stringify({ error: "Missing studentId or action" }), {
@@ -106,6 +106,42 @@ serve(async (req) => {
             }
 
             return new Response(JSON.stringify({ success: true, message: "Name updated successfully" }), {
+                headers: { "Content-Type": "application/json", ...corsHeaders },
+            });
+
+        } else if (action === "edit-username") {
+            if (!username) {
+                return new Response(JSON.stringify({ error: "Username is required" }), {
+                    status: 400,
+                    headers: { "Content-Type": "application/json", ...corsHeaders },
+                });
+            }
+
+            // Check if username is already taken by someone else
+            const { data: existingUser, error: checkError } = await adminClient
+                .from("profiles")
+                .select("id")
+                .eq("username", username.toLowerCase())
+                .neq("id", studentUserId)
+                .maybeSingle();
+
+            if (checkError) throw checkError;
+            if (existingUser) {
+                return new Response(JSON.stringify({ error: "Username is already taken" }), {
+                    status: 409,
+                    headers: { "Content-Type": "application/json", ...corsHeaders },
+                });
+            }
+
+            // Update Profile
+            const { error: profileError } = await adminClient
+                .from("profiles")
+                .update({ username: username.toLowerCase() })
+                .eq("id", studentUserId);
+
+            if (profileError) throw profileError;
+
+            return new Response(JSON.stringify({ success: true, message: "Username updated successfully" }), {
                 headers: { "Content-Type": "application/json", ...corsHeaders },
             });
 
