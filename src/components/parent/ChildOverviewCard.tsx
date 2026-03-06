@@ -1,4 +1,4 @@
-import { Award, BookOpen, Target, MoreVertical, CreditCard, ChevronRight } from "lucide-react";
+import { Award, BookOpen, Target, MoreVertical, CreditCard, ChevronRight, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,74 +43,47 @@ export function ChildOverviewCard({
             )}
 
             <CardHeader className="pb-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className={`
-              h-14 w-14 sm:h-16 sm:w-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white shrink-0 shadow-lg 
-              transition-transform group-hover:rotate-3 group-hover:scale-110 duration-300
-              ${child.is_premium ? 'bg-gradient-to-br from-amber-400 to-amber-600' : 'bg-gradient-hero'}
-            `}>
-                            {initials}
-                        </div>
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <CardTitle className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                            <div className={`
+                                h-14 w-14 sm:h-16 sm:w-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white shrink-0 shadow-lg 
+                                transition-transform group-hover:rotate-3 group-hover:scale-110 duration-300
+                                ${child.is_premium ? 'bg-gradient-to-br from-amber-400 to-amber-600' : 'bg-gradient-hero'}
+                            `}>
+                                {initials}
+                            </div>
+                            <div className="space-y-1.5 min-w-0">
+                                <CardTitle className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate" title={child.profile.full_name || "Unknown"}>
                                     {child.profile.full_name || "Unknown"}
                                 </CardTitle>
-                                {child.is_premium ? (
-                                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 uppercase font-black text-[10px] py-0.5">
-                                        Premium
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="outline" className="text-muted-foreground uppercase font-bold text-[10px] py-0.5">
-                                        Standard
-                                    </Badge>
-                                )}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {child.is_premium ? (
+                                        <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 uppercase font-black text-[10px] py-0.5">
+                                            Premium
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="text-muted-foreground uppercase font-bold text-[10px] py-0.5">
+                                            Standard
+                                        </Badge>
+                                    )}
+                                    <span className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-black text-primary border border-primary/20 uppercase">
+                                        {child.class_year === "year_6" ? "Year 6" : child.class_year === "year_9" ? "Year 9" : "N/A"}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-lg border border-border/50">
+                                        ID: {child.profile.unique_id}
+                                    </span>
+                                </div>
                             </div>
-                            <CardDescription className="flex items-center gap-3">
-                                <span className="inline-flex items-center rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary border border-primary/20">
-                                    {child.class_year === "year_6" ? "Year 6" : child.class_year === "year_9" ? "Year 9" : "N/A"}
-                                </span>
-                                <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg border">
-                                    ID: {child.profile.unique_id}
-                                </span>
-                            </CardDescription>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <div className="hidden sm:flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="rounded-xl font-bold border-2 hover:bg-muted"
-                                onClick={() => onViewReport(child)}
-                            >
-                                Report
-                            </Button>
-                            <Button
-                                variant="hero"
-                                size="sm"
-                                className="rounded-xl font-bold shadow-lg shadow-primary/20"
-                                onClick={() => onAssignPractice(child)}
-                            >
-                                Assign
-                            </Button>
                         </div>
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10">
+                                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 shrink-0">
                                     <MoreVertical size={20} className="text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-border/50 backdrop-blur-md">
-                                <DropdownMenuItem className="rounded-lg sm:hidden font-bold" onClick={() => onViewReport(child)}>
-                                    View Report
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="rounded-lg sm:hidden font-bold" onClick={() => onAssignPractice(child)}>
-                                    Assign Practice
-                                </DropdownMenuItem>
                                 {!child.is_premium && (
                                     <DropdownMenuItem
                                         className="rounded-lg text-amber-600 dark:text-amber-400 font-black flex items-center gap-2"
@@ -121,13 +94,33 @@ export function ChildOverviewCard({
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem
-                                    className="rounded-lg text-destructive font-bold focus:bg-destructive/10 focus:text-destructive"
+                                    className="rounded-lg text-destructive font-bold focus:bg-destructive/10 focus:text-destructive flex items-center gap-2"
                                     onClick={() => onDeleteChild(child)}
                                 >
+                                    <Trash2 size={14} />
                                     Delete Account
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1 border-t border-border/40 sm:border-none sm:pt-0">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 sm:flex-none rounded-xl font-bold border-2 h-9 hover:bg-muted"
+                            onClick={() => onViewReport(child)}
+                        >
+                            View Report
+                        </Button>
+                        <Button
+                            variant="hero"
+                            size="sm"
+                            className="flex-1 sm:flex-none rounded-xl font-bold h-9 shadow-lg shadow-primary/20 bg-primary text-white"
+                            onClick={() => onAssignPractice(child)}
+                        >
+                            Assign Task
+                        </Button>
                     </div>
                 </div>
             </CardHeader>
