@@ -1,4 +1,4 @@
-import { Award, BookOpen, Target, MoreVertical, CreditCard, ChevronRight, Trash2 } from "lucide-react";
+import { Award, BookOpen, Target, MoreVertical, CreditCard, ChevronRight, Trash2, User, Key } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,8 @@ interface ChildOverviewCardProps {
     onAssignPractice: (child: LinkedChild) => void;
     onUpgradePremium: (child: LinkedChild) => void;
     onDeleteChild: (child: LinkedChild) => void;
+    onEditName: (child: LinkedChild) => void;
+    onChangePassword: (child: LinkedChild) => void;
 }
 
 export function ChildOverviewCard({
@@ -29,7 +31,9 @@ export function ChildOverviewCard({
     onViewReport,
     onAssignPractice,
     onUpgradePremium,
-    onDeleteChild
+    onDeleteChild,
+    onEditName,
+    onChangePassword
 }: ChildOverviewCardProps) {
     const initials = child.profile.full_name?.charAt(0).toUpperCase() || "?";
 
@@ -93,6 +97,20 @@ export function ChildOverviewCard({
                                         Upgrade Premium
                                     </DropdownMenuItem>
                                 )}
+                                <DropdownMenuItem
+                                    className="rounded-lg font-bold flex items-center gap-2"
+                                    onClick={() => onEditName(child)}
+                                >
+                                    <User size={14} />
+                                    Edit Name
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="rounded-lg font-bold flex items-center gap-2"
+                                    onClick={() => onChangePassword(child)}
+                                >
+                                    <Key size={14} />
+                                    Change Password
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                     className="rounded-lg text-destructive font-bold focus:bg-destructive/10 focus:text-destructive flex items-center gap-2"
                                     onClick={() => onDeleteChild(child)}

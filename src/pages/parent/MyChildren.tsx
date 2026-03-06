@@ -11,6 +11,8 @@ import { ChildOverviewCard } from "@/components/parent/ChildOverviewCard";
 import { DummyPaymentModal } from "@/components/parent/DummyPaymentModal";
 import { AddChildDialog } from "@/components/parent/AddChildDialog";
 import { DeleteChildDialog } from "@/components/parent/DeleteChildDialog";
+import { EditChildNameDialog } from "@/components/parent/EditChildNameDialog";
+import { ChangeChildPasswordDialog } from "@/components/parent/ChangeChildPasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LinkedChild, ChildAnalytics } from "@/types/parent";
@@ -29,6 +31,8 @@ export default function MyChildren() {
     const [addChildOpen, setAddChildOpen] = useState(false);
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [editNameOpen, setEditNameOpen] = useState(false);
+    const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
     const [selectedChild, setSelectedChild] = useState<LinkedChild | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -233,6 +237,14 @@ export default function MyChildren() {
                                 setSelectedChild(c);
                                 setDeleteDialogOpen(true);
                             }}
+                            onEditName={(c) => {
+                                setSelectedChild(c);
+                                setEditNameOpen(true);
+                            }}
+                            onChangePassword={(c) => {
+                                setSelectedChild(c);
+                                setChangePasswordOpen(true);
+                            }}
                         />
                     ))}
                 </div>
@@ -292,6 +304,19 @@ export default function MyChildren() {
                 child={selectedChild}
                 onConfirm={handleDeleteChild}
                 isDeleting={false}
+            />
+
+            <EditChildNameDialog
+                open={editNameOpen}
+                onOpenChange={setEditNameOpen}
+                child={selectedChild}
+                onSuccess={() => parentUserId && fetchChildren(parentUserId)}
+            />
+
+            <ChangeChildPasswordDialog
+                open={changePasswordOpen}
+                onOpenChange={setChangePasswordOpen}
+                child={selectedChild}
             />
         </div>
     );

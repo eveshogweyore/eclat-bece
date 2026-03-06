@@ -11,6 +11,8 @@ import { DummyPaymentModal } from "@/components/parent/DummyPaymentModal";
 import { ParentActivityFeed } from "@/components/parent/ParentActivityFeed";
 import { DeleteChildDialog } from "@/components/parent/DeleteChildDialog";
 import { AddChildDialog } from "@/components/parent/AddChildDialog";
+import { EditChildNameDialog } from "@/components/parent/EditChildNameDialog";
+import { ChangeChildPasswordDialog } from "@/components/parent/ChangeChildPasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LinkedChild, ChildAnalytics, QuizResult } from "@/types/parent";
@@ -30,8 +32,10 @@ export default function ParentDashboard() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPaymentChild, setSelectedPaymentChild] = useState<{ id: string; name: string } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [childToDelete, setChildToDelete] = useState<LinkedChild | null>(null);
+  const [managedChild, setManagedChild] = useState<LinkedChild | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editNameOpen, setEditNameOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   // Derived Top-Level Metrics
   const totalChildren = linkedChildren.length;
@@ -101,12 +105,12 @@ export default function ParentDashboard() {
   };
 
   const handleDeleteChild = async () => {
-    if (!childToDelete) return;
+    if (!managedChild) return;
 
     setIsDeleting(true);
     try {
       const { error } = await supabase.functions.invoke("delete-student-account", {
-        body: { studentId: childToDelete.id },
+        body: { studentId: managedChild.id },
       });
 
       if (error) {
@@ -114,9 +118,9 @@ export default function ParentDashboard() {
         throw new Error(errorData.error || error.message);
       }
 
-      toast.success(`${childToDelete.profile.full_name}'s account has been deleted.`);
+      toast.success(`${managedChild.profile.full_name}'s account deleted.`);
       setDeleteDialogOpen(false);
-      setChildToDelete(null);
+      setManagedChild(null);
 
       if (parentUserId) {
         await fetchLinkedChildren(parentUserId);
@@ -289,19 +293,11 @@ export default function ParentDashboard() {
                   index={index}
                   analytics={childrenAnalytics.get(child.id)}
                   onViewReport={(c) => {
-                    setSelectedChild({
-                      name: c.profile.full_name || "Unknown",
-                      class: c.class_year === "year_6" ? "Year 6" : "Year 9",
-                      avatar: c.profile.full_name?.charAt(0).toUpperCase() || "?"
-                    });
+                    setSelectedChild({ name: c.profile.full_name || "Unknown", class: c.class_year === "year_6" ? "Year 6" : "Year 9", avatar: c.profile.full_name?.charAt(0).toUpperCase() || "?" });
                     setReportOpen(true);
                   }}
                   onAssignPractice={(c) => {
-                    setSelectedChild({
-                      name: c.profile.full_name || "Unknown",
-                      class: c.class_year === "year_6" ? "Year 6" : "Year 9",
-                      avatar: c.profile.full_name?.charAt(0).toUpperCase() || "?"
-                    });
+                    setSelectedChild({ name: c.profile.full_name || "Unknown", class: c.class_year === "year_6" ? "Year 6" : "Year 9", avatar: c.profile.full_name?.charAt(0).toUpperCase() || "?" });
                     setAssignOpen(true);
                   }}
                   onUpgradePremium={(c) => {
@@ -309,8 +305,16 @@ export default function ParentDashboard() {
                     setPaymentModalOpen(true);
                   }}
                   onDeleteChild={(c) => {
-                    setChildToDelete(c);
+                    setManagedChild(c);
                     setDeleteDialogOpen(true);
+                  }}
+                  onEditName={(c) => {
+                    setManagedChild(c);
+                    setEditNameOpen(true);
+                  }}
+                  onChangePassword={(c) => {
+                    setManagedChild(c);
+                    setChangePasswordOpen(true);
                   }}
                 />
               ))}
@@ -392,9 +396,22 @@ export default function ParentDashboard() {
       <DeleteChildDialog
         isOpen={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        child={childToDelete}
+        child={managedChild}
         onConfirm={handleDeleteChild}
         isDeleting={isDeleting}
+      />
+
+      <EditChildNameDialog
+        open={editNameOpen}
+        onOpenChange={setEditNameOpen}
+        child={managedChild}
+        onSuccess={() => parentUserId && fetchLinkedChildren(parentUserId)}
+      />
+
+      <ChangeChildPasswordDialog
+        open={changePasswordOpen}
+        onOpenChange={setChangePasswordOpen}
+        child={managedChild}
       />
     </div>
   );
