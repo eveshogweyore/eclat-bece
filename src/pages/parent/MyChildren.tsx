@@ -307,6 +307,7 @@ export default function MyChildren() {
             <StudentReportDialog
                 open={reportOpen}
                 onOpenChange={setReportOpen}
+                studentId={selectedChild?.id || ""}
                 studentName={selectedChild?.profile.full_name || ""}
                 studentClass={selectedChild?.class_year === "year_6" ? "Year 6" : "Year 9"}
                 avatar={selectedChild?.profile.full_name?.charAt(0)}
