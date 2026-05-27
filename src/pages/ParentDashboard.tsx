@@ -84,6 +84,7 @@ export default function ParentDashboard() {
 
   const fetchLinkedChildren = async (parentId: string) => {
     try {
+      setGlobalActivities([]); // Reset global activities before fetching
       const { data, error } = await supabase
         .from("students")
         .select(`
@@ -101,7 +102,7 @@ export default function ParentDashboard() {
         setLinkedChildren(data as unknown as LinkedChild[]);
         // Fetch analytics and assignments for each child
         data.forEach((child) => {
-          fetchChildAnalytics(child.id);
+          fetchChildAnalytics(child.id, child.profile?.full_name || "Unknown");
           fetchChildAssignments(child.id);
         });
       }
@@ -138,7 +139,7 @@ export default function ParentDashboard() {
     }
   };
 
-  const fetchChildAnalytics = async (studentId: string) => {
+  const fetchChildAnalytics = async (studentId: string, studentName: string) => {
     try {
       const { data: quizResults, error } = await supabase
         .from("quiz_results")
@@ -175,12 +176,14 @@ export default function ParentDashboard() {
 
         setChildrenAnalytics((prev) => new Map(prev).set(studentId, analytics));
 
-        const studentName = linkedChildren.find(c => c.id === studentId)?.profile.full_name || "Unknown";
         const activitiesWithName = quizResults.map(q => ({ ...q, student_name: studentName })) as QuizResult[];
 
         setGlobalActivities(prev => {
           const combined = [...prev, ...activitiesWithName];
-          return combined.sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()).slice(0, 20);
+          const unique = combined.filter((activity, index, self) => 
+            self.findIndex(a => a.id === activity.id) === index
+          );
+          return unique.sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()).slice(0, 20);
         });
       }
     } catch (error) {

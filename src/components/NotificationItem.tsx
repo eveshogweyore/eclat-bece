@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Check, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface NotificationItemProps {
   notification: {
@@ -19,6 +20,8 @@ interface NotificationItemProps {
 }
 
 export function NotificationItem({ notification, onMarkAsRead, onAction }: NotificationItemProps) {
+  const navigate = useNavigate();
+
   const handleAcceptLinkRequest = async () => {
     const requestId = notification.metadata?.request_id;
     if (!requestId) return;
@@ -106,6 +109,13 @@ export function NotificationItem({ notification, onMarkAsRead, onAction }: Notif
   const handleClick = () => {
     if (!notification.read) {
       onMarkAsRead(notification.id);
+    }
+    if (notification.type === "parent_assignment") {
+      navigate("/dashboard/student/assignments");
+      onAction();
+    } else if (notification.type === "assignment_completed") {
+      navigate("/dashboard/parent");
+      onAction();
     }
   };
 

@@ -246,6 +246,49 @@ export default function QuizPage() {
                completed_at: new Date().toISOString()
             })
             .eq("id", assignmentId);
+
+          try {
+            const { data: assignmentData } = await supabase
+              .from("practice_assignments")
+              .select("parent_id, subject")
+              .eq("id", assignmentId)
+              .single();
+
+            if (assignmentData) {
+              const { data: parentData } = await supabase
+                .from("parents")
+                .select("user_id")
+                .eq("id", assignmentData.parent_id)
+                .single();
+
+              const { data: profileData } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", user.id)
+                .single();
+
+              const studentName = profileData?.full_name || "Your child";
+
+              if (parentData?.user_id) {
+                await supabase
+                  .from("notifications")
+                  .insert({
+                    user_id: parentData.user_id,
+                    title: "Assignment Completed",
+                    message: `${studentName} completed the assigned ${assignmentData.subject} practice task with a score of ${Math.round(percentage)}%.`,
+                    type: "assignment_completed",
+                    read: false,
+                    metadata: {
+                      assignment_id: assignmentId,
+                      student_id: studentData.id,
+                      score: percentage,
+                    }
+                  });
+              }
+            }
+          } catch (notifErr) {
+            console.error("Error creating assignment completion notification:", notifErr);
+          }
         }
         toast.success("Quiz results saved! 🎉");
       }
