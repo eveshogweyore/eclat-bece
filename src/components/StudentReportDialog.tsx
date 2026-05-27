@@ -5,6 +5,9 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Award, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "next-themes";
+import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-light.png";
 
 interface StudentReportDialogProps {
   open: boolean;
@@ -16,6 +19,8 @@ interface StudentReportDialogProps {
 }
 
 export function StudentReportDialog({ open, onOpenChange, studentId, studentName, studentClass, avatar }: StudentReportDialogProps) {
+  const { theme } = useTheme();
+  const logo = theme === "dark" ? logoLight : logoDark;
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<{
     avgScore: number;
@@ -202,7 +207,7 @@ export function StudentReportDialog({ open, onOpenChange, studentId, studentName
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="border-b pb-4">
           <div className="flex items-center gap-4">
-            <img src="/logo.png" alt="Éclat Logo" className="h-12 w-auto onerror={(e)=>{e.currentTarget.src='/src/assets/logo-light.png'}}" />
+            <img src={logo} alt="Éclat Logo" className="h-12 w-auto" />
             <div className="flex-1">
               <h2 className="text-2xl font-bold">Progress Report</h2>
               <p className="text-muted-foreground">Comprehensive performance overview</p>
