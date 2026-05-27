@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -97,5 +99,14 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  .dashboard-theme,
+  .dashboard-theme button,
+  .dashboard-theme input,
+  .dashboard-theme select,
+  .dashboard-theme textarea,
+  [data-radix-portal] * {
+    font-family: 'Outfit', sans-serif !important;
   }
 }

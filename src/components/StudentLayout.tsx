@@ -87,7 +87,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-primary-light/20 via-background to-accent-light/20">
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-primary-light/20 via-background to-accent-light/20 dashboard-theme">
         <StudentSidebar />
         
         <div className="flex-1 flex flex-col">
