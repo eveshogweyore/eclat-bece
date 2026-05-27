@@ -31,7 +31,6 @@ export default function StudentDashboard() {
   const [classYear, setClassYear] = useState<string | null>(null);
   const [subjectCounts, setSubjectCounts] = useState<Record<string, number>>({});
   const [currentStreak, setCurrentStreak] = useState(0);
-  const [currentStreak, setCurrentStreak] = useState(0);
   const [isPremium, setIsPremium] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -469,7 +468,6 @@ export default function StudentDashboard() {
               <PracticeAssignment 
                 assignments={assignments} 
                 isLoading={isLoadingAssignments}
-                onStartAssignment={() => {}} // Component now handles navigation internally
               />
             </div>
 

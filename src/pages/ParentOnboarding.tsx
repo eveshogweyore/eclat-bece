@@ -1,20 +1,13 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Loader2, Plus, X, UserCheck } from "lucide-react";
+import { BookOpen, Loader2, UserCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getSafeErrorMessage } from "@/lib/errorUtils";
 import { Badge } from "@/components/ui/badge";
-import { z } from "zod";
-
-const studentCodeSchema = z.string()
-  .trim()
-  .length(8, "Student code must be exactly 8 characters")
-  .regex(/^[A-Z0-9]+$/, "Student code must contain only uppercase letters and numbers");
 
 interface LinkedChild {
   id: string;
@@ -23,22 +16,29 @@ interface LinkedChild {
   class_year: string;
 }
 
+interface ChildRow {
+  id: string;
+  class_year: string | null;
+  profiles: {
+    full_name: string | null;
+    unique_id: string;
+  };
+}
+
 export default function ParentOnboarding() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const [studentCode, setStudentCode] = useState("");
+
   const [linkedChildren, setLinkedChildren] = useState<LinkedChild[]>([]);
-  const [isAddingChild, setIsAddingChild] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [parentUserId, setParentUserId] = useState<string | null>(null);
+  const [parentId, setParentId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchParentData = async () => {
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
+
         if (userError || !user) {
           toast({
             title: "Authentication Required",
@@ -49,9 +49,18 @@ export default function ParentOnboarding() {
           return;
         }
 
-        setParentUserId(user.id);
+        const { data: parentData, error: parentError } = await supabase
+          .from("parents")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
 
-        // Check if parent already has linked children
+        if (parentError || !parentData) {
+          throw parentError || new Error("Parent profile not found");
+        }
+
+        setParentId(parentData.id);
+
         const { data: children, error: childrenError } = await supabase
           .from("students")
           .select(`
@@ -60,12 +69,12 @@ export default function ParentOnboarding() {
             class_year,
             profiles!inner(full_name, unique_id)
           `)
-          .eq("parent_id", user.id);
+          .eq("parent_id", parentData.id);
 
         if (childrenError) {
           console.error("Error fetching children:", childrenError);
         } else if (children && children.length > 0) {
-          const formattedChildren = children.map((child: any) => ({
+          const formattedChildren = (children as unknown as ChildRow[]).map((child) => ({
             id: child.id,
             full_name: child.profiles.full_name || "Unknown",
             unique_id: child.profiles.unique_id,
@@ -88,140 +97,14 @@ export default function ParentOnboarding() {
     fetchParentData();
   }, [navigate, toast]);
 
-  const handleAddChild = async () => {
-    if (!parentUserId) return;
-
-    try {
-      // Validate student code
-      const validated = studentCodeSchema.parse(studentCode);
-      setIsAddingChild(true);
-
-      // Find student by unique_id (student code)
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, full_name, unique_id")
-        .eq("unique_id", validated)
-        .maybeSingle();
-
-      if (profileError || !profileData) {
-        toast({
-          title: "Student Not Found",
-          description: "No student found with this code. Please check and try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if this profile has a student record
-      const { data: studentData, error: studentError } = await supabase
-        .from("students")
-        .select("id, parent_id, class_year")
-        .eq("user_id", profileData.id)
-        .maybeSingle();
-
-      if (studentError || !studentData) {
-        toast({
-          title: "Invalid Code",
-          description: "This code does not belong to a student account.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if student is already linked to this parent
-      if (linkedChildren.some(child => child.id === studentData.id)) {
-        toast({
-          title: "Already Linked",
-          description: "This student is already linked to your account.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if student is already linked to another parent
-      if (studentData.parent_id && studentData.parent_id !== parentUserId) {
-        toast({
-          title: "Already Linked",
-          description: "This student is already linked to another parent account.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Link student to parent
-      const { error: updateError } = await supabase
-        .from("students")
-        .update({ parent_id: parentUserId })
-        .eq("id", studentData.id);
-
-      if (updateError) throw updateError;
-
-      // Add to linked children list
-      const newChild: LinkedChild = {
-        id: studentData.id,
-        full_name: profileData.full_name || "Unknown",
-        unique_id: profileData.unique_id,
-        class_year: studentData.class_year || "Unknown",
-      };
-
-      setLinkedChildren([...linkedChildren, newChild]);
-      setStudentCode("");
-
-      toast({
-        title: "Child Linked Successfully",
-        description: `${newChild.full_name} has been added to your account.`,
-      });
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        toast({
-          title: "Invalid Code",
-          description: error.errors[0].message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: getSafeErrorMessage(error),
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setIsAddingChild(false);
-    }
-  };
-
-  const handleRemoveChild = async (childId: string) => {
-    try {
-      const { error } = await supabase
-        .from("students")
-        .update({ parent_id: null })
-        .eq("id", childId);
-
-      if (error) throw error;
-
-      setLinkedChildren(linkedChildren.filter(child => child.id !== childId));
-
-      toast({
-        title: "Child Removed",
-        description: "Student has been unlinked from your account.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: getSafeErrorMessage(error),
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleCompleteOnboarding = async () => {
     setIsSubmitting(true);
 
     try {
-      if (!parentUserId) {
+      if (!parentId) {
         toast({
           title: "Error",
-          description: "User not found. Please sign in again.",
+          description: "Parent profile not found. Please sign in again.",
           variant: "destructive",
         });
         navigate("/auth?role=parent");
@@ -229,12 +112,12 @@ export default function ParentOnboarding() {
       }
 
       toast({
-        title: "Welcome to Éclat!",
+        title: "Welcome to Eclat!",
         description: "Your parent account has been set up successfully.",
       });
 
       navigate("/dashboard/parent");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Setup Failed",
         description: getSafeErrorMessage(error),
@@ -245,6 +128,13 @@ export default function ParentOnboarding() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-accent-light/20 flex items-center justify-center p-4">
@@ -252,7 +142,7 @@ export default function ParentOnboarding() {
         <div className="text-center mb-8 animate-fade-in">
           <div className="inline-flex items-center gap-2 mb-2">
             <BookOpen className="text-primary" size={32} />
-            <h1 className="text-3xl font-bold text-foreground">Éclat</h1>
+            <h1 className="text-3xl font-bold text-foreground">Eclat</h1>
           </div>
           <p className="text-muted-foreground">Complete your parent profile</p>
         </div>
@@ -261,48 +151,11 @@ export default function ParentOnboarding() {
           <CardHeader>
             <CardTitle className="text-2xl text-center">Parent Profile Setup</CardTitle>
             <CardDescription className="text-center">
-              Link your children's accounts using their student codes
+              Create and manage student accounts from your dashboard
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Add Child Section */}
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Label htmlFor="studentCode">Student Code</Label>
-                  <Input
-                    id="studentCode"
-                    type="text"
-                    placeholder="Enter 8-character student code"
-                    value={studentCode}
-                    onChange={(e) => setStudentCode(e.target.value.toUpperCase())}
-                    maxLength={8}
-                    className="font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Ask your child for their unique student code from their dashboard
-                  </p>
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    onClick={handleAddChild}
-                    disabled={isAddingChild || studentCode.length !== 8}
-                    className="gap-2"
-                  >
-                    {isAddingChild ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4" />
-                    )}
-                    Add
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Linked Children List */}
-            {linkedChildren.length > 0 && (
+            {linkedChildren.length > 0 ? (
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <UserCheck className="h-4 w-4" />
@@ -325,38 +178,25 @@ export default function ParentOnboarding() {
                           </Badge>
                         </div>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveChild(child.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
-
-            {linkedChildren.length === 0 && (
+            ) : (
               <div className="bg-muted/50 p-6 rounded-lg text-center">
                 <p className="text-sm text-muted-foreground">
-                  No children linked yet. Add your first child using their student code above.
+                  No student accounts have been created yet.
                 </p>
               </div>
             )}
 
-            {/* Info Box */}
             <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
               <p className="text-sm">
-                <strong>Note:</strong> You can add or remove children later from your dashboard. 
-                Each student code can only be linked to one parent account.
+                <strong>Note:</strong> Student accounts are created by parents from the dashboard.
+                You can add your first child after completing setup.
               </p>
             </div>
 
-            {/* Continue Button */}
             <Button
               type="button"
               onClick={handleCompleteOnboarding}
@@ -373,12 +213,6 @@ export default function ParentOnboarding() {
                 "Continue to Dashboard"
               )}
             </Button>
-
-            {linkedChildren.length === 0 && (
-              <p className="text-xs text-center text-muted-foreground">
-                You can skip this step and add children later
-              </p>
-            )}
           </CardContent>
         </Card>
       </div>

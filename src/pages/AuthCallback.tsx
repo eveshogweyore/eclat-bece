@@ -27,8 +27,6 @@ export default function AuthCallback() {
         }
 
         const user = session.user;
-        const role = localStorage.getItem('pendingRole') || 'student';
-        localStorage.removeItem('pendingRole');
 
         // Check if user already has a role (existing user)
         const { data: roleData } = await supabase
@@ -41,19 +39,6 @@ export default function AuthCallback() {
           // Existing user - check onboarding status and redirect to dashboard
           const userRole = roleData.role;
 
-          if (userRole === "student") {
-            const { data: studentData } = await supabase
-              .from("students")
-              .select("onboarding_completed")
-              .eq("user_id", user.id)
-              .maybeSingle();
-
-            if (studentData && !studentData.onboarding_completed) {
-              navigate("/onboarding/student");
-              return;
-            }
-          }
-
           // Navigate to appropriate dashboard
           const dashboardPath = userRole === "parent" 
             ? "/dashboard/parent" 
@@ -62,6 +47,20 @@ export default function AuthCallback() {
             : "/dashboard/student";
 
           navigate(dashboardPath);
+          return;
+        }
+
+        const role = localStorage.getItem('pendingRole');
+        localStorage.removeItem('pendingRole');
+
+        if (!role || !["parent", "school"].includes(role)) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Setup Failed",
+            description: "Please choose Parent or School before using Google sign-in.",
+            variant: "destructive",
+          });
+          navigate("/role-selection");
           return;
         }
 
@@ -102,9 +101,7 @@ export default function AuthCallback() {
         }
 
         // Redirect to appropriate onboarding
-        if (role === "student") {
-          navigate("/onboarding/student");
-        } else if (role === "parent") {
+        if (role === "parent") {
           navigate("/onboarding/parent");
         } else if (role === "school") {
           navigate("/onboarding/school");

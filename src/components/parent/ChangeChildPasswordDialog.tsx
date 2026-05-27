@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Key, Eye, EyeOff } from "lucide-react";
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
+
 interface ChangeChildPasswordDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -44,14 +47,15 @@ export function ChangeChildPasswordDialog({ open, onOpenChange, child }: ChangeC
             });
 
             if (error) throw error;
+            if (data?.error) throw new Error(data.error);
 
             toast.success(`Password for ${child.profile.full_name} has been reset`);
             onOpenChange(false);
             setPassword("");
             setConfirmPassword("");
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error changing password:", error);
-            toast.error(error.message || "Failed to change password");
+            toast.error(getErrorMessage(error, "Failed to change password"));
         } finally {
             setIsSubmitting(false);
         }

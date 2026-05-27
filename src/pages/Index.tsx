@@ -32,49 +32,27 @@ const Index = () => {
           .eq("user_id", session.user.id)
           .maybeSingle();
 
-        // If no role exists, check for pending role from Google OAuth
+        // If no role exists, ask the server to provision the role from verified auth metadata.
         if (!roleData) {
-          const pendingRole = localStorage.getItem('pendingRole') as "student" | "parent" | "school" | null;
-          if (pendingRole && (pendingRole === "student" || pendingRole === "parent" || pendingRole === "school")) {
-            // Create role record
-            await supabase
+          const { error: provisionError } = await supabase.functions.invoke("provision-user", {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+
+          if (!provisionError) {
+            const { data: provisionedRole } = await supabase
               .from("user_roles")
-              .insert([{ user_id: session.user.id, role: pendingRole }]);
+              .select("role")
+              .eq("user_id", session.user.id)
+              .maybeSingle();
 
-            // Create role-specific record
-            if (pendingRole === "student") {
-              await supabase
-                .from("students")
-                .insert([{ user_id: session.user.id }]);
-            } else if (pendingRole === "parent") {
-              await supabase
-                .from("parents")
-                .insert([{ user_id: session.user.id }]);
-            } else if (pendingRole === "school") {
-              await supabase
-                .from("schools")
-                .insert([{ user_id: session.user.id, school_name: "" }]);
-            }
-
-            // Clear pending role and refetch
-            localStorage.removeItem('pendingRole');
-            roleData = { role: pendingRole };
+            roleData = provisionedRole;
+          } else {
+            console.warn("Provision user error:", provisionError);
           }
         }
 
         if (roleData?.role === "student") {
-          // Check if student completed onboarding
-          const { data: studentData } = await supabase
-            .from("students")
-            .select("onboarding_completed")
-            .eq("user_id", session.user.id)
-            .maybeSingle();
-
-          if (studentData && !studentData.onboarding_completed) {
-            navigate("/onboarding/student");
-          } else {
-            navigate("/dashboard/student");
-          }
+          navigate("/dashboard/student");
         } else if (roleData?.role === "parent") {
           navigate("/dashboard/parent");
         } else if (roleData?.role === "school") {

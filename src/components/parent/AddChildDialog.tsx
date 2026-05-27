@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
+
 interface AddChildDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -29,8 +32,8 @@ export function AddChildDialog({ open, onOpenChange, parentId, onSuccess }: AddC
             return;
         }
 
-        if (newChildData.username.length < 2 || newChildData.username.length > 10) {
-            toast.error("Username must be between 2 and 10 characters");
+        if (newChildData.username.length < 2 || newChildData.username.length > 20) {
+            toast.error("Username must be between 2 and 20 characters");
             return;
         }
 
@@ -62,16 +65,15 @@ export function AddChildDialog({ open, onOpenChange, parentId, onSuccess }: AddC
                 }
             });
 
-            if (response.error) {
-                toast.error(response.error.message || "Failed to create student account");
-                throw new Error(response.error.message);
-            }
+            if (response.error) throw response.error;
+            if (response.data?.error) throw new Error(response.data.error);
 
             toast.success("Student account created successfully!");
-            setCreatedChildCredentials({ username: newChildData.username, password: newChildData.password });
+            setCreatedChildCredentials({ username: newChildData.username.trim().toLowerCase(), password: newChildData.password });
             onSuccess();
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Error creating student account:", error);
+            toast.error(getErrorMessage(error, "Failed to create student account"));
         } finally {
             setIsAddingChild(false);
         }

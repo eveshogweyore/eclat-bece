@@ -39,6 +39,7 @@ export default function QuizPage() {
   const [score, setScore] = useState(0);
   const [quizComplete, setQuizComplete] = useState(false);
   const [answers, setAnswers] = useState<boolean[]>([]);
+  const [quizSubject, setQuizSubject] = useState(subject || "Mixed Topics");
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -113,6 +114,8 @@ export default function QuizPage() {
         if (fetchTopics && fetchTopics.length > 0) {
           query = query.in("topic", fetchTopics);
         }
+
+        setQuizSubject(fetchSubject || "Mixed Topics");
 
         const { data: allQuestions, error: questionsError } = await query;
 
@@ -223,7 +226,7 @@ export default function QuizPage() {
         .from("quiz_results")
         .insert({
           student_id: studentData.id,
-          subject: subject || "Mixed Topics",
+          subject: quizSubject || subject || "Mixed Topics",
           score: percentage,
           total_questions: questions.length,
           correct_answers: score,
@@ -336,7 +339,7 @@ export default function QuizPage() {
           </Button>
 
           <div className="flex justify-between items-center mb-2">
-            <Badge variant="secondary">{subject || "Mixed Topics"}</Badge>
+            <Badge variant="secondary">{quizSubject || subject || "Mixed Topics"}</Badge>
             <span className="text-sm text-muted-foreground">
               Question {currentQuestion + 1} of {questions.length}
             </span>

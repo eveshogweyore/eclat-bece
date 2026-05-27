@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Fingerprint } from "lucide-react";
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
+
 interface EditChildUsernameDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -30,8 +33,8 @@ export function EditChildUsernameDialog({ open, onOpenChange, child, onSuccess }
 
         const normalizedUsername = username.trim().toLowerCase();
 
-        if (normalizedUsername.length < 2 || normalizedUsername.length > 10) {
-            toast.error("Username must be between 2 and 10 characters");
+        if (normalizedUsername.length < 2 || normalizedUsername.length > 20) {
+            toast.error("Username must be between 2 and 20 characters");
             return;
         }
 
@@ -50,17 +53,15 @@ export function EditChildUsernameDialog({ open, onOpenChange, child, onSuccess }
                 },
             });
 
-            if (error) {
-                const errorData = await error.response?.json();
-                throw new Error(errorData?.error || error.message || "Failed to update username");
-            }
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
 
             toast.success("Username updated successfully");
             onSuccess();
             onOpenChange(false);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error updating username:", error);
-            toast.error(error.message || "Failed to update username");
+            toast.error(getErrorMessage(error, "Failed to update username"));
         } finally {
             setIsSubmitting(false);
         }
@@ -92,7 +93,7 @@ export function EditChildUsernameDialog({ open, onOpenChange, child, onSuccess }
                             required
                         />
                         <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1.5 px-1">
-                            Username must be 2-10 characters, lowercase, and contain no spaces.
+                            Username must be 2-20 characters, lowercase, and contain no spaces.
                         </p>
                     </div>
                     <DialogFooter className="pt-2">

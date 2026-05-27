@@ -176,20 +176,6 @@ export default function AuthPage() {
         return;
       }
 
-      // Deactivate onboarding check for students as parents provision them fully
-      /* if (userRole === "student") {
-        const { data: studentData } = await supabase
-          .from("students")
-          .select("onboarding_completed")
-          .eq("user_id", data.user.id)
-          .single();
-
-        if (studentData && !studentData.onboarding_completed) {
-          navigate("/onboarding/student");
-          return;
-        }
-      } */
-
       // Navigate to appropriate dashboard based on actual role
       const dashboardPath = userRole === "parent"
         ? "/dashboard/parent"
@@ -198,7 +184,7 @@ export default function AuthPage() {
           : "/dashboard/student";
 
       navigate(dashboardPath);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         toast({
           title: "Validation Error",
@@ -236,9 +222,19 @@ export default function AuthPage() {
       const email = formData.get("email") as string;
       const password = formData.get("password") as string;
       const confirmPassword = formData.get("confirmPassword") as string;
+      const schoolName = role === "school" ? ((formData.get("schoolName") as string) || "").trim() : undefined;
 
       // Validate input
       const validated = signupSchema.parse({ fullName, email, password, confirmPassword });
+
+      if (role === "school" && (!schoolName || schoolName.length < 2)) {
+        toast({
+          title: "Validation Error",
+          description: "School name must be at least 2 characters",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const { data, error } = await supabase.auth.signUp({
         email: validated.email,
@@ -248,6 +244,7 @@ export default function AuthPage() {
           data: {
             full_name: validated.fullName,
             role: role,
+            ...(role === "school" ? { school_name: schoolName } : {}),
           },
         },
       });
@@ -292,7 +289,7 @@ export default function AuthPage() {
 
       // Navigate to email verification page with user_id for later onboarding redirect
       navigate(`/verify-email?email=${encodeURIComponent(validated.email)}&role=${role}&user_id=${data.user.id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         toast({
           title: "Validation Error",
@@ -345,10 +342,10 @@ export default function AuthPage() {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: "An unexpected error occurred with Google sign-in",
+        description: getSafeErrorMessage(error),
         variant: "destructive",
       });
     } finally {

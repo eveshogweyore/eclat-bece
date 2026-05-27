@@ -8,10 +8,12 @@ import { Slider } from "@/components/ui/slider";
 import { BookOpen, Clock, Target, ChevronRight, ChevronLeft, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LinkedChild } from "@/types/parent";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 interface AssignPracticeDialogProps {
   open: boolean;
@@ -66,11 +68,12 @@ export function AssignPracticeDialog({ open, onOpenChange, child }: AssignPracti
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       
       const metadata = data.metadata || {};
       setSubjectsMetadata(metadata);
       setAvailableSubjects(Object.keys(metadata).sort());
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching metadata:", error);
       toast.error("Failed to load subjects and topics");
     } finally {
@@ -92,6 +95,7 @@ export function AssignPracticeDialog({ open, onOpenChange, child }: AssignPracti
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       
       const count = data.count || 0;
       setMaxAvailableQuestions(Math.min(count, questionLimit));
@@ -177,9 +181,9 @@ export function AssignPracticeDialog({ open, onOpenChange, child }: AssignPracti
         description: `${child.profile.full_name} will see this in their dashboard.`,
       });
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error assigning task:", error);
-      toast.error(error.message || "Failed to assign task");
+      toast.error(getErrorMessage(error, "Failed to assign task"));
     } finally {
       setIsSubmitting(false);
     }

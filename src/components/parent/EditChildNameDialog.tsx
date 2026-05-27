@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, User } from "lucide-react";
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
+
 interface EditChildNameDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -39,13 +42,14 @@ export function EditChildNameDialog({ open, onOpenChange, child, onSuccess }: Ed
             });
 
             if (error) throw error;
+            if (data?.error) throw new Error(data.error);
 
             toast.success("Student name updated successfully");
             onSuccess();
             onOpenChange(false);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error updating name:", error);
-            toast.error(error.message || "Failed to update name");
+            toast.error(getErrorMessage(error, "Failed to update name"));
         } finally {
             setIsSubmitting(false);
         }

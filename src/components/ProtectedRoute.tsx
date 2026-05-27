@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
@@ -48,7 +48,6 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     checkAuthStatus();
@@ -90,7 +89,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
           .from("user_roles")
           .select("role")
           .eq("user_id", session.user.id)
-          .eq("role", requiredRole as any) // Cast to any to support admin role before type regeneration
+          .eq("role", requiredRole)
           .maybeSingle();
 
         if (!roleData) {
@@ -128,16 +127,16 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
           roleData = userRole;
         }
 
-        // For students, check onboarding status
+        // Students are provisioned by parents, so they should already have a student record.
         if (requiredRole === "student") {
           const { data: studentData } = await supabase
             .from("students")
-            .select("onboarding_completed")
+            .select("id")
             .eq("user_id", session.user.id)
             .maybeSingle();
 
-          if (studentData && !studentData.onboarding_completed && location.pathname !== "/onboarding/student") {
-            navigate("/onboarding/student");
+          if (!studentData) {
+            navigate("/auth?role=student");
             return;
           }
         }

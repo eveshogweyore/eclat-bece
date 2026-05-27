@@ -16,7 +16,10 @@ import { EditChildUsernameDialog } from "@/components/parent/EditChildUsernameDi
 import { ChangeChildPasswordDialog } from "@/components/parent/ChangeChildPasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LinkedChild, ChildAnalytics, Assignment } from "@/types/parent";
+import { LinkedChild, ChildAnalytics, Assignment, QuizResult } from "@/types/parent";
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
 
 export default function MyChildren() {
     const navigate = useNavigate();
@@ -119,7 +122,7 @@ export default function MyChildren() {
                     averageScore: Math.round(averageScore),
                     totalQuizzes: quizResults.length,
                     subjectPerformance,
-                    recentQuizzes: quizResults.slice(0, 5) as any[],
+                    recentQuizzes: quizResults.slice(0, 5) as QuizResult[],
                 };
                 setChildrenAnalytics((prev) => new Map(prev).set(studentId, analytics));
             }
@@ -130,12 +133,12 @@ export default function MyChildren() {
 
     const fetchAssignments = async (studentId: string) => {
         try {
-            const { data, error } = await (supabase
-                .from("practice_assignments" as any)
+            const { data, error } = await supabase
+                .from("practice_assignments")
                 .select("*")
                 .eq("student_id", studentId)
                 .order("created_at", { ascending: false })
-                .limit(5) as any);
+                .limit(5);
 
             if (error) throw error;
 
@@ -152,15 +155,16 @@ export default function MyChildren() {
     const handleDeleteChild = async () => {
         if (!selectedChild) return;
         try {
-            const { error } = await supabase.functions.invoke("delete-student-account", {
+            const { data, error } = await supabase.functions.invoke("delete-student-account", {
                 body: { studentId: selectedChild.id },
             });
             if (error) throw error;
+            if (data?.error) throw new Error(data.error);
             toast.success(`${selectedChild.profile.full_name}'s account deleted`);
             setDeleteDialogOpen(false);
             if (parentUserId) fetchChildren(parentUserId);
-        } catch (error: any) {
-            toast.error(error.message || "Failed to delete account");
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, "Failed to delete account"));
         }
     };
 

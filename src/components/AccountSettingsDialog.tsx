@@ -7,6 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Building2, UserPlus } from "lucide-react";
 
+const getToastDescription = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+
 interface AccountSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -51,18 +54,18 @@ export const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDia
         const { data: schoolData } = await supabase
           .from("schools")
           .select("school_name")
-          .eq("user_id", studentData.school_id)
+          .eq("id", studentData.school_id)
           .single();
 
         if (schoolData) {
           setSchoolName(schoolData.school_name);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error loading connection data:", error);
       toast({
         title: "Error",
-        description: "Failed to load connection information",
+        description: getToastDescription(error, "Failed to load connection information"),
         variant: "destructive",
       });
     } finally {
@@ -120,23 +123,23 @@ export const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDia
       // Update student with parent_id
       const { error: updateError } = await supabase
         .from("students")
-        .update({ parent_id: parentProfile.id })
+        .update({ parent_id: parentData.id })
         .eq("user_id", user.id);
 
       if (updateError) throw updateError;
 
-      setCurrentParentId(parentProfile.id);
+      setCurrentParentId(parentData.id);
       setParentCode("");
       
       toast({
         title: "Success",
         description: "Successfully connected to parent account!",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error connecting to parent:", error);
       toast({
         title: "Error",
-        description: "Failed to connect to parent account",
+        description: getToastDescription(error, "Failed to connect to parent account"),
         variant: "destructive",
       });
     } finally {
@@ -190,11 +193,11 @@ export const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDia
         title: "Success",
         description: `Successfully connected to ${school.school_name}!`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error connecting to school:", error);
       toast({
         title: "Error",
-        description: "Failed to connect to school",
+        description: getToastDescription(error, "Failed to connect to school"),
         variant: "destructive",
       });
     } finally {

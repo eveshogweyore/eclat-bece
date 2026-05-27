@@ -12,6 +12,9 @@ import { Loader2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
+
 interface DummyPaymentModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -36,18 +39,19 @@ export function DummyPaymentModal({
             // Simulate payment processing delay
             await new Promise((resolve) => setTimeout(resolve, 1500));
 
-            const { error } = await supabase.functions.invoke("manage-student-account", {
+            const { data, error } = await supabase.functions.invoke("manage-student-account", {
                 body: { studentId, action: "upgrade-premium" },
             });
 
             if (error) throw error;
+            if (data?.error) throw new Error(data.error);
 
             toast.success(`${studentName} now has Premium Access!`);
             onSuccess();
             onOpenChange(false);
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Error processing payment:", error);
-            toast.error("Payment failed. Please try again.");
+            toast.error(getErrorMessage(error, "Payment failed. Please try again."));
         } finally {
             setIsProcessing(false);
         }
