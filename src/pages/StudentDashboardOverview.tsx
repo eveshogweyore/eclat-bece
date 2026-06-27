@@ -85,38 +85,57 @@ export default function StudentDashboardOverview() {
           setAverageScore(Math.round(avgScore));
         }
 
-        // Calculate monthly rank
+        // Calculate monthly rank (by total points, matching the National Leaderboard)
         const now = new Date();
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
         
         const { data: monthlyResults } = await supabase
           .from("quiz_results")
-          .select("student_id, score")
+          .select("student_id, correct_answers")
           .gte("completed_at", firstDayOfMonth);
         
-        if (monthlyResults && monthlyResults.length > 0) {
-          // Group by student and calculate average score
-          const studentScores = new Map<string, number[]>();
-          monthlyResults.forEach(result => {
-            if (!studentScores.has(result.student_id)) {
-              studentScores.set(result.student_id, []);
+        if (monthlyResults) {
+          const { data: allStudents } = await supabase
+            .from("students")
+            .select("id, user_id");
+            
+          const { data: allProfiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, username");
+          
+          if (allStudents && allProfiles) {
+            const profileMap = new Map(allProfiles.map(p => [p.id, p]));
+            const studentPointsMap = new Map<string, number>();
+            const studentNamesMap = new Map<string, string>();
+            
+            allStudents.forEach(s => {
+              studentPointsMap.set(s.id, 0);
+              const p = profileMap.get(s.user_id);
+              const name = p?.full_name || p?.username || "Unknown Student";
+              studentNamesMap.set(s.id, name);
+            });
+            
+            monthlyResults.forEach(result => {
+              const currentPoints = studentPointsMap.get(result.student_id) || 0;
+              studentPointsMap.set(result.student_id, currentPoints + (result.correct_answers * 100));
+            });
+            
+            const rankings = Array.from(studentPointsMap.entries()).map(([studentId, points]) => ({
+              studentId,
+              points,
+              name: studentNamesMap.get(studentId) || ""
+            }));
+            
+            // Sort by points descending, then by name for stable sorting matching the leaderboard
+            rankings.sort((a, b) => {
+              if (b.points !== a.points) return b.points - a.points;
+              return a.name.localeCompare(b.name);
+            });
+            
+            const rank = rankings.findIndex(s => s.studentId === studentData.id) + 1;
+            if (rank > 0) {
+              setMonthlyRank(rank);
             }
-            studentScores.get(result.student_id)!.push(result.score);
-          });
-          
-          // Calculate average for each student
-          const studentAverages = Array.from(studentScores.entries()).map(([studentId, scores]) => ({
-            studentId,
-            avgScore: scores.reduce((sum, score) => sum + score, 0) / scores.length
-          }));
-          
-          // Sort by average score descending
-          studentAverages.sort((a, b) => b.avgScore - a.avgScore);
-          
-          // Find current student's rank
-          const rank = studentAverages.findIndex(s => s.studentId === studentData.id) + 1;
-          if (rank > 0) {
-            setMonthlyRank(rank);
           }
         }
       }
