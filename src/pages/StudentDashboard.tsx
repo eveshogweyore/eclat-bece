@@ -83,17 +83,22 @@ export default function StudentDashboard() {
       ? 'quiz_questions_year6'
       : 'quiz_questions_year9';
 
-    const { data, error } = await supabase
-      .from(tableName as any)
-      .select("subject");
-
-    if (data && !error) {
-      const counts = data.reduce((acc: Record<string, number>, curr: any) => {
-        acc[curr.subject] = (acc[curr.subject] || 0) + 1;
-        return acc;
-      }, {});
-      setSubjectCounts(counts);
-    }
+    const subjectsToFetch = ["Mathematics", "English Language", "Basic Science", "Social Studies"];
+    const counts: Record<string, number> = {};
+    
+    await Promise.all(
+      subjectsToFetch.map(async (subject) => {
+        const { count, error } = await supabase
+          .from(tableName as any)
+          .select("*", { count: 'exact', head: true })
+          .eq("subject", subject);
+        
+        if (!error && count !== null) {
+          counts[subject] = count;
+        }
+      })
+    );
+    setSubjectCounts(counts);
   };
 
   const fetchStreak = async () => {

@@ -26,35 +26,39 @@ export default function StudentPractice() {
 
       if (!studentData?.class_year) return;
 
-      const tableName = studentData.class_year === 'year_6' 
+      const classYear = studentData.class_year;
+      const tableName = classYear === 'year_6' 
         ? 'quiz_questions_year6' 
         : 'quiz_questions_year9';
 
-      const { data, error } = await supabase
-        .from(tableName as any)
-        .select("subject, topic");
+      const viewName = classYear === 'year_6'
+        ? 'topic_question_counts_year6'
+        : 'topic_question_counts_year9';
 
-      if (data && !error) {
-        // Count questions by subject
-        const counts = data.reduce((acc: Record<string, number>, curr: any) => {
-          acc[curr.subject] = (acc[curr.subject] || 0) + 1;
-          return acc;
-        }, {});
-        setSubjectCounts(counts);
-
-        // Group by topic and count
-        const topicMap = new Map<string, {subject: string; count: number}>();
-        data.forEach((item: any) => {
-          if (item.topic) {
-            const key = item.topic;
-            if (!topicMap.has(key)) {
-              topicMap.set(key, { subject: item.subject, count: 0 });
-            }
-            topicMap.get(key)!.count++;
+      // 1. Fetch subject counts efficiently using count: 'exact' and head: true
+      const subjectsToFetch = ["Mathematics", "English Language", "Basic Science", "Social Studies"];
+      const counts: Record<string, number> = {};
+      
+      await Promise.all(
+        subjectsToFetch.map(async (subject) => {
+          const { count, error } = await supabase
+            .from(tableName as any)
+            .select("*", { count: 'exact', head: true })
+            .eq("subject", subject);
+          
+          if (!error && count !== null) {
+            counts[subject] = count;
           }
-        });
+        })
+      );
+      setSubjectCounts(counts);
 
-        // Convert to array with icons
+      // 2. Fetch topic counts from the pre-aggregated database view
+      const { data: topicsData, error: topicsError } = await supabase
+        .from(viewName as any)
+        .select("subject, topic, questions_count");
+
+      if (topicsData && !topicsError) {
         const topicIcons: Record<string, string> = {
           "Number & Numeration": "➗",
           "Comprehension Passages": "📖",
@@ -65,11 +69,11 @@ export default function StudentPractice() {
           "default": "📚"
         };
 
-        const topicsArray = Array.from(topicMap.entries()).map(([name, data]) => ({
-          name,
-          subject: data.subject,
-          icon: topicIcons[name] || topicIcons.default,
-          questions: data.count
+        const topicsArray = topicsData.map((item: any) => ({
+          name: item.topic,
+          subject: item.subject,
+          icon: topicIcons[item.topic] || topicIcons.default,
+          questions: item.questions_count
         }));
 
         setTopics(topicsArray);
