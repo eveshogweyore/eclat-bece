@@ -300,10 +300,19 @@ export default function ParentDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
-          {/* Left Column: Children Cards */}
-          <div id="children" className="lg:col-span-8 space-y-8 scroll-mt-24">
-            <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex flex-col gap-12">
+          {/* Activity Feed Section */}
+          <div className="space-y-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            <div className="flex items-center gap-3 px-1">
+              <div className="h-8 w-1.5 bg-primary rounded-full" />
+              <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Activity Feed</h3>
+            </div>
+            <ParentActivityFeed activities={globalActivities} isLoading={isLoading} />
+          </div>
+
+          {/* My Children Section */}
+          <div id="children" className="space-y-6 scroll-mt-24 animate-slide-up" style={{ animationDelay: "0.3s" }}>
+            <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-1.5 bg-primary rounded-full" />
                 <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">My Children</h3>
@@ -356,17 +365,6 @@ export default function ParentDashboard() {
                   }}
                 />
               ))}
-            </div>
-          </div>
-
-          {/* Right Column: Activity Feed & Sidebar */}
-          <div className="lg:col-span-4 flex flex-col gap-8">
-            <div className="flex items-center gap-3 px-1">
-              <div className="h-8 w-1.5 bg-primary rounded-full" />
-              <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Activity Feed</h3>
-            </div>
-            <div className="flex-1 min-h-0">
-              <ParentActivityFeed activities={globalActivities} isLoading={isLoading} />
             </div>
           </div>
         </div>

@@ -56,28 +56,30 @@ export function ParentActivityFeed({ activities, isLoading }: ParentActivityFeed
                         <p className="text-sm">Quizzes completed by your children will appear here.</p>
                     </div>
                 ) : (
-                    <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
-                        {activities.map((activity, index) => (
-                            <div key={activity.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                    <div className="space-y-6 relative before:absolute before:inset-y-0 before:left-4 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-primary/20 before:via-border before:to-transparent">
+                        {activities.map((activity) => (
+                            <div key={activity.id} className="relative flex items-start gap-4 group">
                                 {/* Timeline dot */}
-                                <div className="flex items-center justify-center w-10 h-10 rounded-full border border-background bg-primary-light text-primary shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-transform duration-300 group-hover:scale-110">
-                                    {activity.score >= 80 ? <Award className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-background bg-primary-light text-primary shadow-sm shrink-0 z-10 transition-transform duration-300 group-hover:scale-110 mt-1">
+                                    {activity.score >= 80 ? <Award className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
                                 </div>
 
                                 {/* Timeline card */}
-                                <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border bg-card shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="flex items-center justify-between mb-2 gap-2">
-                                        <span className="font-bold text-foreground truncate">{activity.student_name}</span>
-                                        <Badge variant={activity.score >= 80 ? "default" : "secondary"} className="shrink-0">
-                                            {Math.round(activity.score)}%
-                                        </Badge>
+                                <div className="flex-1 p-4 rounded-2xl border bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 min-w-0 hover:border-primary/20">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className="font-black text-foreground text-sm sm:text-base truncate">{activity.student_name}</span>
+                                            <Badge variant={activity.score >= 80 ? "default" : "secondary"} className="shrink-0 text-[10px] font-black">
+                                                {Math.round(activity.score)}%
+                                            </Badge>
+                                        </div>
+                                        <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap">
+                                            {formatDistanceToNow(new Date(activity.completed_at), { addSuffix: true })}
+                                        </span>
                                     </div>
-                                    <div className="text-sm text-muted-foreground mb-3">
-                                        Completed a <strong className="text-foreground font-semibold">{activity.subject}</strong> quiz
-                                        ({activity.correct_answers}/{activity.total_questions} correct)
-                                    </div>
-                                    <div className="text-xs font-medium text-primary/80 lowercase">
-                                        {formatDistanceToNow(new Date(activity.completed_at), { addSuffix: true })}
+                                    <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                        Completed a <strong className="text-foreground font-bold">{activity.subject}</strong> quiz
+                                        {" "}(<span className="font-mono text-primary font-bold">{activity.correct_answers}/{activity.total_questions}</span> correct)
                                     </div>
                                 </div>
                             </div>
