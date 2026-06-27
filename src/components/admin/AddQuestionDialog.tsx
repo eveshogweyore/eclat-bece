@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,11 +32,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, Trash2, CheckCircle2 } from "lucide-react";
+import { Loader2, Plus, Trash2, CheckCircle2, ImagePlus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { CSVUploadForm } from "./CSVUploadForm";
+import { validateImageFile, compressImage } from "@/lib/imageUtils";
 
 const formSchema = z.object({
     classYear: z.enum(["year_6", "year_9"]),
@@ -83,6 +84,16 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
     const [loading, setLoading] = useState(false);
     const [passages, setPassages] = useState<Array<{ id: string; title: string | null; passage_text: string }>>([]);
     const { user } = useAuth();
+
+    // Image upload state
+    const [questionImageFile, setQuestionImageFile] = useState<File | null>(null);
+    const [questionImagePreview, setQuestionImagePreview] = useState<string | null>(null);
+    const [optionImageFiles, setOptionImageFiles] = useState<(File | null)[]>([null, null, null, null]);
+    const [optionImagePreviews, setOptionImagePreviews] = useState<(string | null)[]>([null, null, null, null]);
+    const [isUploadingImages, setIsUploadingImages] = useState(false);
+
+    const questionImageInputRef = useRef<HTMLInputElement>(null);
+    const optionImageInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -134,6 +145,70 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
             console.error('Error fetching passages:', error);
             toast.error(`Failed to load passages: ${error.message || 'Unknown error'}`);
         }
+    };
+
+    // --- Image helper functions ---
+    const handleQuestionImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const error = validateImageFile(file);
+        if (error) {
+            toast.error(error);
+            return;
+        }
+        if (questionImagePreview) URL.revokeObjectURL(questionImagePreview);
+        setQuestionImageFile(file);
+        setQuestionImagePreview(URL.createObjectURL(file));
+        // Reset input so the same file can be re-selected
+        e.target.value = '';
+    };
+
+    const handleOptionImageSelect = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const error = validateImageFile(file);
+        if (error) {
+            toast.error(error);
+            return;
+        }
+        if (optionImagePreviews[index]) URL.revokeObjectURL(optionImagePreviews[index]!);
+        setOptionImageFiles(prev => { const next = [...prev]; next[index] = file; return next; });
+        setOptionImagePreviews(prev => { const next = [...prev]; next[index] = URL.createObjectURL(file); return next; });
+        e.target.value = '';
+    };
+
+    const removeQuestionImage = () => {
+        if (questionImagePreview) URL.revokeObjectURL(questionImagePreview);
+        setQuestionImageFile(null);
+        setQuestionImagePreview(null);
+    };
+
+    const removeOptionImage = (index: number) => {
+        if (optionImagePreviews[index]) URL.revokeObjectURL(optionImagePreviews[index]!);
+        setOptionImageFiles(prev => { const next = [...prev]; next[index] = null; return next; });
+        setOptionImagePreviews(prev => { const next = [...prev]; next[index] = null; return next; });
+    };
+
+    const uploadImageToStorage = async (file: File, path: string): Promise<string> => {
+        const compressedFile = await compressImage(file);
+        const { error } = await supabase.storage
+            .from('question-images')
+            .upload(path, compressedFile, { upsert: true });
+        if (error) throw error;
+        const { data: urlData } = supabase.storage
+            .from('question-images')
+            .getPublicUrl(path);
+        return urlData.publicUrl;
+    };
+
+    const resetImageState = () => {
+        if (questionImagePreview) URL.revokeObjectURL(questionImagePreview);
+        optionImagePreviews.forEach(url => { if (url) URL.revokeObjectURL(url); });
+        setQuestionImageFile(null);
+        setQuestionImagePreview(null);
+        setOptionImageFiles([null, null, null, null]);
+        setOptionImagePreviews([null, null, null, null]);
+        setIsUploadingImages(false);
     };
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -190,11 +265,50 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
                 display_order: index,
             }));
 
-            const { error: optionsError } = await supabase
+            const { data: optionsData, error: optionsError } = await supabase
                 .from(optionsTableName as any)
-                .insert(optionsToInsert);
+                .insert(optionsToInsert)
+                .select();
 
             if (optionsError) throw optionsError;
+
+            // 2b. Upload images if any
+            const hasAnyImage = questionImageFile || optionImageFiles.some(f => f !== null);
+            if (hasAnyImage) {
+                setIsUploadingImages(true);
+                try {
+                    // Upload question image
+                    if (questionImageFile) {
+                        const publicUrl = await uploadImageToStorage(
+                            questionImageFile,
+                            `${values.classYear}/questions/${questionData.id}.webp`
+                        );
+                        await supabase
+                            .from(tableName as any)
+                            .update({ image_url: publicUrl })
+                            .eq('id', questionData.id);
+                    }
+
+                    // Upload option images
+                    if (optionsData) {
+                        for (let i = 0; i < optionImageFiles.length; i++) {
+                            const optFile = optionImageFiles[i];
+                            if (optFile && optionsData[i]) {
+                                const publicUrl = await uploadImageToStorage(
+                                    optFile,
+                                    `${values.classYear}/options/${optionsData[i].id}.webp`
+                                );
+                                await supabase
+                                    .from(optionsTableName as any)
+                                    .update({ image_url: publicUrl })
+                                    .eq('id', optionsData[i].id);
+                            }
+                        }
+                    }
+                } finally {
+                    setIsUploadingImages(false);
+                }
+            }
 
             // 3. Log Action
             await supabase.rpc('log_admin_action', {
@@ -209,6 +323,7 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
             });
 
             toast.success("Question added successfully");
+            resetImageState();
             setOpen(false);
             form.reset();
             onSuccess();
@@ -239,8 +354,15 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
         onSuccess();
     };
 
+    const handleOpenChange = (newOpen: boolean) => {
+        if (!newOpen) {
+            resetImageState();
+        }
+        setOpen(newOpen);
+    };
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 <Button>
                     <Plus className="mr-2 h-4 w-4" />
@@ -524,23 +646,63 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
                                 )}
                             />
 
+                            {/* Question Image (Optional) */}
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium">Question Image <span className="text-muted-foreground">(Optional)</span></Label>
+                                {questionImagePreview ? (
+                                    <div className="relative inline-block">
+                                        <img src={questionImagePreview} alt="Question preview" className="max-h-40 rounded-xl border shadow-sm object-contain" />
+                                        <button type="button" onClick={removeQuestionImage} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md hover:scale-110 transition-transform">
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div
+                                        onClick={() => questionImageInputRef.current?.click()}
+                                        className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                                    >
+                                        <ImagePlus className="h-8 w-8 mx-auto text-muted-foreground/50 group-hover:text-primary/70 transition-colors mb-2" />
+                                        <p className="text-sm text-muted-foreground">Click to add an image</p>
+                                        <p className="text-xs text-muted-foreground/60 mt-1">JPEG, PNG, WebP, GIF • Max 3 MB</p>
+                                    </div>
+                                )}
+                                <input ref={questionImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleQuestionImageSelect} />
+                            </div>
+
                             <div className="space-y-2">
                                 <FormLabel>Options</FormLabel>
                                 <FormDescription>Mark the correct answer using the radio button.</FormDescription>
                                 {form.watch("options").map((option, index) => (
-                                    <div key={index} className="flex items-center gap-2">
-                                        <div
-                                            className={`cursor-pointer p-2 rounded-full ${option.isCorrect ? 'text-green-600 bg-green-100' : 'text-muted-foreground hover:bg-muted'}`}
-                                            onClick={() => setCorrectOption(index)}
-                                        >
-                                            <CheckCircle2 size={20} />
+                                    <div key={index} className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <div
+                                                className={`cursor-pointer p-2 rounded-full ${option.isCorrect ? 'text-green-600 bg-green-100' : 'text-muted-foreground hover:bg-muted'}`}
+                                                onClick={() => setCorrectOption(index)}
+                                            >
+                                                <CheckCircle2 size={20} />
+                                            </div>
+                                            <Input
+                                                value={option.text}
+                                                onChange={(e) => updateOption(index, e.target.value)}
+                                                placeholder={`Option ${index + 1}`}
+                                                className={option.isCorrect ? "border-green-500 ring-1 ring-green-500" : ""}
+                                            />
                                         </div>
-                                        <Input
-                                            value={option.text}
-                                            onChange={(e) => updateOption(index, e.target.value)}
-                                            placeholder={`Option ${index + 1}`}
-                                            className={option.isCorrect ? "border-green-500 ring-1 ring-green-500" : ""}
-                                        />
+                                        <div className="flex items-center gap-2 mt-1 ml-10">
+                                            <button type="button" onClick={() => optionImageInputRefs.current[index]?.click()} className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
+                                                <ImagePlus className="h-3.5 w-3.5" />
+                                                {optionImagePreviews[index] ? 'Change' : 'Add'} Image
+                                            </button>
+                                            {optionImagePreviews[index] && (
+                                                <button type="button" onClick={() => removeOptionImage(index)} className="text-xs text-destructive hover:text-destructive/80 flex items-center gap-1">
+                                                    <X className="h-3 w-3" /> Remove
+                                                </button>
+                                            )}
+                                            <input ref={el => { optionImageInputRefs.current[index] = el; }} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => handleOptionImageSelect(index, e)} />
+                                        </div>
+                                        {optionImagePreviews[index] && (
+                                            <img src={optionImagePreviews[index]!} alt={`Option ${index + 1} preview`} className="max-h-16 rounded-lg border object-contain mt-1 ml-10" />
+                                        )}
                                     </div>
                                 ))}
                                 <FormMessage>
@@ -563,9 +725,9 @@ export function AddQuestionDialog({ onSuccess }: AddQuestionDialogProps) {
                             />
 
                             <DialogFooter>
-                                <Button type="submit" disabled={loading}>
-                                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Save Question
+                                <Button type="submit" disabled={loading || isUploadingImages}>
+                                    {(loading || isUploadingImages) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {isUploadingImages ? 'Uploading Images...' : 'Save Question'}
                                 </Button>
                             </DialogFooter>
                         </form>
