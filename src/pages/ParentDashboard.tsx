@@ -187,7 +187,7 @@ export default function ParentDashboard() {
           const unique = combined.filter((activity, index, self) => 
             self.findIndex(a => a.id === activity.id) === index
           );
-          return unique.sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()).slice(0, 20);
+          return unique.sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()).slice(0, 3);
         });
       }
     } catch (error) {
@@ -303,9 +303,19 @@ export default function ParentDashboard() {
         <div className="flex flex-col gap-12">
           {/* Activity Feed Section */}
           <div className="space-y-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center gap-3 px-1">
-              <div className="h-8 w-1.5 bg-primary rounded-full" />
-              <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Activity Feed</h3>
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-1.5 bg-primary rounded-full" />
+                <h3 className="text-2xl font-black text-foreground tracking-tight uppercase">Activity Feed</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/dashboard/parent/activities")}
+                className="rounded-xl font-bold text-primary hover:bg-primary/10 transition-colors"
+              >
+                View All <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
             </div>
             <ParentActivityFeed activities={globalActivities} isLoading={isLoading} />
           </div>

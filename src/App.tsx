@@ -26,6 +26,7 @@ import MyChildren from "./pages/parent/MyChildren";
 import SubscriptionsPage from "./pages/parent/SubscriptionsPage";
 import ParentSettingsPage from "./pages/parent/ParentSettingsPage";
 import ParentResourcesPage from "./pages/parent/ParentResourcesPage";
+import ActivityFeedPage from "./pages/parent/ActivityFeedPage";
 import SchoolDashboard from "./pages/SchoolDashboard";
 import QuizPage from "./pages/QuizPage";
 import SubjectAnalytics from "./pages/SubjectAnalytics";
@@ -111,6 +112,13 @@ const App = () => (
                 <ProtectedRoute requiredRole="parent">
                   <ParentLayout>
                     <ParentDashboard />
+                  </ParentLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/parent/activities" element={
+                <ProtectedRoute requiredRole="parent">
+                  <ParentLayout>
+                    <ActivityFeedPage />
                   </ParentLayout>
                 </ProtectedRoute>
               } />

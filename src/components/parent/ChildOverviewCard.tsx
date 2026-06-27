@@ -293,9 +293,10 @@ export function ChildOverviewCard({
                                                 color: "hsl(var(--primary))",
                                             },
                                         }}
+                                        className="h-full w-full aspect-auto"
                                     >
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={analytics.subjectPerformance}>
+                                            <BarChart data={analytics.subjectPerformance} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                                                 <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="hsl(var(--border))" opacity={0.3} />
                                                 <XAxis
                                                     dataKey="subject"
