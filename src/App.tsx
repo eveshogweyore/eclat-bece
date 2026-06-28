@@ -44,6 +44,7 @@ import AdminCompetitionsPage from "./pages/AdminCompetitionsPage";
 import AdminReportsPage from "./pages/AdminReportsPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
 import PassagesPage from "./pages/PassagesPage";
+import FlagReportsPage from "./pages/admin/FlagReportsPage";
 import { AuthProvider } from "./components/AuthProvider";
 
 const queryClient = new QueryClient();
@@ -178,6 +179,7 @@ const App = () => (
                 <Route path="competitions" element={<AdminCompetitionsPage />} />
                 <Route path="reports" element={<AdminReportsPage />} />
                 <Route path="settings" element={<AdminSettingsPage />} />
+                <Route path="flags" element={<FlagReportsPage />} />
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

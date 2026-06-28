@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, BookOpen, Trophy, TrendingUp, Activity, Shield, ChevronLeft, ChevronRight, UserPlus, UserMinus, Edit, Trash2, Mail, Upload, Search, Download, Filter } from "lucide-react";
+import { Users, BookOpen, Trophy, TrendingUp, Activity, Shield, ChevronLeft, ChevronRight, UserPlus, UserMinus, Edit, Trash2, Mail, Upload, Search, Download, Filter, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Separator } from "@/components/ui/separator";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 interface PlatformStats {
     totalStudents: number;
@@ -32,8 +33,10 @@ interface RecentActivity {
 
 export default function AdminDashboard() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [adminName, setAdminName] = useState("Admin");
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+    const [pendingFlagsCount, setPendingFlagsCount] = useState(0);
     const [stats, setStats] = useState<PlatformStats>({
         totalStudents: 0,
         totalParents: 0,
@@ -131,6 +134,14 @@ export default function AdminDashboard() {
                 totalQuizzesTaken: quizzesTaken || 0,
                 activeStudentsToday: activeToday || 0,
             });
+
+            // Count pending flagged questions
+            const { count: flagsCount } = await supabase
+                .from("flagged_questions")
+                .select("*", { count: "exact", head: true })
+                .eq("status", "pending");
+
+            setPendingFlagsCount(flagsCount || 0);
         } catch (error) {
             console.error("Error fetching stats:", error);
         } finally {
@@ -230,6 +241,15 @@ export default function AdminDashboard() {
             color: "text-pink-600",
             bgColor: "bg-pink-100 dark:bg-pink-900/30",
             description: "Partner schools",
+        },
+        {
+            title: "Question Flags",
+            value: pendingFlagsCount.toString(),
+            icon: Flag,
+            color: "text-red-600",
+            bgColor: "bg-red-100 dark:bg-red-900/30",
+            description: "Pending reports",
+            link: "/admin/flags",
         },
     ];
 
@@ -357,6 +377,27 @@ export default function AdminDashboard() {
 
             <Separator />
 
+            {/* Warning Banner for Unresolved Flags */}
+            {pendingFlagsCount > 0 && (
+                <div 
+                    onClick={() => navigate("/admin/flags")}
+                    className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive-foreground hover:bg-destructive/15 transition-all cursor-pointer animate-fade-in"
+                >
+                    <Flag className="h-5 w-5 text-destructive animate-bounce" />
+                    <div className="flex-1">
+                        <p className="font-semibold text-sm text-destructive dark:text-red-400">
+                            ⚠️ Question Flags Requiring Review
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            There are {pendingFlagsCount} flagged questions reported by students. Click here to review and resolve them.
+                        </p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive hover:bg-destructive/10">
+                        View Reports
+                    </Button>
+                </div>
+            )}
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {statCards.map((stat, index) => {
@@ -364,7 +405,12 @@ export default function AdminDashboard() {
                     return (
                         <Card
                             key={index}
-                            className="hover:shadow-lg transition-shadow animate-slide-up"
+                            onClick={() => stat.link && navigate(stat.link)}
+                            className={`hover:shadow-lg transition-shadow animate-slide-up ${
+                                stat.link 
+                                    ? 'cursor-pointer border-red-500/20 hover:border-red-500/50 hover:bg-red-50/5' 
+                                    : ''
+                            }`}
                             style={{ animationDelay: `${index * 0.05}s` }}
                         >
                             <CardContent className="p-6">

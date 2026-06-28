@@ -4,10 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Trophy, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Trophy, ArrowLeft, ArrowRight, Loader2, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface QuizOption {
   text: string;
@@ -47,6 +64,63 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [quizSubject, setQuizSubject] = useState(subject || "Mixed Topics");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  // Question Flagging States
+  const [flagDialogOpen, setFlagDialogOpen] = useState(false);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagDetails, setFlagDetails] = useState("");
+  const [flaggedQuestionIds, setFlaggedQuestionIds] = useState<string[]>([]);
+  const [submittingFlag, setSubmittingFlag] = useState(false);
+
+  const handleFlagQuestion = async () => {
+    if (!user || !question) return;
+    if (!flagReason) {
+      toast.error("Please select a reason for flagging.");
+      return;
+    }
+
+    setSubmittingFlag(true);
+    try {
+      // 1. Get student ID and class year
+      const { data: studentData } = await supabase
+        .from("students")
+        .select("id, class_year")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!studentData?.id) {
+        toast.error("Student profile not found.");
+        return;
+      }
+
+      // 2. Insert flag report
+      const { error } = await supabase
+        .from("flagged_questions")
+        .insert({
+          student_id: studentData.id,
+          class_year: studentData.class_year,
+          question_id: question.id,
+          subject: question.subject,
+          topic: topic || "Mixed Topics",
+          question_text: question.question,
+          reason: flagReason,
+          details: flagDetails.trim() || null,
+        });
+
+      if (error) throw error;
+
+      toast.success("Thank you! Question has been flagged for admin review. 🎉");
+      setFlaggedQuestionIds(prev => [...prev, question.id]);
+      setFlagDialogOpen(false);
+      setFlagReason("");
+      setFlagDetails("");
+    } catch (err: any) {
+      console.error("Error flagging question:", err);
+      toast.error(err.message || "Failed to submit flag report.");
+    } finally {
+      setSubmittingFlag(false);
+    }
+  };
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -394,7 +468,25 @@ export default function QuizPage() {
           </Button>
 
           <div className="flex justify-between items-center mb-2">
-            <Badge variant="secondary">{quizSubject || subject || "Mixed Topics"}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{quizSubject || subject || "Mixed Topics"}</Badge>
+              {questions.length > 0 && question && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFlagDialogOpen(true)}
+                  disabled={flaggedQuestionIds.includes(question.id)}
+                  className={`h-7 px-2 text-xs flex items-center gap-1 ${
+                    flaggedQuestionIds.includes(question.id)
+                      ? "text-green-600 bg-green-50 dark:bg-green-950/20 hover:bg-green-50 dark:hover:bg-green-950/20"
+                      : "text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                  }`}
+                >
+                  <Flag className="h-3 w-3" />
+                  {flaggedQuestionIds.includes(question.id) ? "Flagged" : "Flag"}
+                </Button>
+              )}
+            </div>
             <span className="text-sm text-muted-foreground">
               Question {currentQuestion + 1} of {questions.length}
             </span>
@@ -526,6 +618,62 @@ export default function QuizPage() {
           </div>
         </Card>
       </div>
+
+      {/* Flag Question Dialog */}
+      <Dialog open={flagDialogOpen} onOpenChange={setFlagDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flag className="h-5 w-5 text-destructive" />
+              Flag this Question
+            </DialogTitle>
+            <DialogDescription>
+              Let us know what is wrong with this question. Our administrators will review it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="flag-reason">Reason</Label>
+              <Select value={flagReason} onValueChange={setFlagReason}>
+                <SelectTrigger id="flag-reason">
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="incorrect_answer">Incorrect Correct Option</SelectItem>
+                  <SelectItem value="typo">Spelling or Formatting Issue</SelectItem>
+                  <SelectItem value="missing_image">Image Failed to Load / Wrong Image</SelectItem>
+                  <SelectItem value="incomplete">Question or Options Truncated</SelectItem>
+                  <SelectItem value="other">Other Issue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="flag-details">Additional Details (Optional)</Label>
+              <Textarea
+                id="flag-details"
+                placeholder="Explain the issue in detail..."
+                value={flagDetails}
+                onChange={(e) => setFlagDetails(e.target.value)}
+                maxLength={500}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFlagDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleFlagQuestion} 
+              disabled={submittingFlag || !flagReason}
+            >
+              {submittingFlag && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Submit Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Lightbox Overlay */}
       {lightboxImage && (

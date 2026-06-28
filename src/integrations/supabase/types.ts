@@ -169,6 +169,69 @@ export type Database = {
           },
         ]
       }
+      flagged_questions: {
+        Row: {
+          class_year: string
+          created_at: string | null
+          details: string | null
+          id: string
+          question_id: string
+          question_text: string
+          reason: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
+          student_id: string
+          subject: string
+          topic: string | null
+        }
+        Insert: {
+          class_year: string
+          created_at?: string | null
+          details?: string | null
+          id?: string
+          question_id: string
+          question_text: string
+          reason: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          student_id: string
+          subject: string
+          topic?: string | null
+        }
+        Update: {
+          class_year?: string
+          created_at?: string | null
+          details?: string | null
+          id?: string
+          question_id?: string
+          question_text?: string
+          reason?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          student_id?: string
+          subject?: string
+          topic?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flagged_questions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flagged_questions_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       comprehension_passages_year6: {
         Row: {
           created_at: string | null

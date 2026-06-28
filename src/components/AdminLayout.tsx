@@ -13,7 +13,8 @@ import {
     Menu,
     X,
     Shield,
-    Loader2
+    Loader2,
+    Flag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,6 +112,7 @@ export const AdminLayout = () => {
         { name: "Competitions", href: "/admin/competitions", icon: Trophy },
         { name: "Reports", href: "/admin/reports", icon: FileText },
         { name: "Settings", href: "/admin/settings", icon: Settings },
+        { name: "Flag Reports", href: "/admin/flags", icon: Flag },
     ];
 
     const isActiveRoute = (href: string) => {
