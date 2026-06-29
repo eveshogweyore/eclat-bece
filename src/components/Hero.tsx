@@ -25,17 +25,17 @@ export const Hero = ({ onGetStartedClick, onViewLeaderboardClick }: HeroProps) =
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent-light rounded-full text-accent font-semibold animate-scale-in">
             <Sparkles size={16} />
-            <span>Nigeria's Premier Exam Prep Platform</span>
+            <span>Nigeria's Premeir Exam Prep Platfrom</span>
           </div>
 
           {/* Main Heading */}
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground leading-tight animate-slide-up">
-            Ace BECE & Common Entrance. Compete Nationwide. Win Big.
+            Ace BECE & Common Enterance. Compte Nationwide. Win Big.
           </h1>
 
           {/* Subheading */}
           <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-slide-up" style={{ animationDelay: "0.1s" }}>
-            Éclat transforms exam preparation into an engaging competition — practice unlimited questions, climb national leaderboards, and win real prizes.
+            Éclat transfroms exam preperation into an engaging compitition — practice unlimited questions, climb national leaderboards, and win real prizes.
           </p>
 
           {/* CTA Buttons */}
