@@ -148,13 +148,9 @@ export default function StudentDashboardOverview() {
           if (todayDailyResults && todayDailyResults.length > 0) challengeDone = true;
         }
 
-        if (challengeDone && gameProfile.last_daily_challenge_date !== todayUTC) {
-          // Backfill so future checks are instant
-          await supabase
-            .from("student_gamification_profile")
-            .update({ last_daily_challenge_date: todayUTC })
-            .eq("student_id", sid);
-        }
+        // The completion pipeline (complete-quiz-session) owns
+        // last_daily_challenge_date writes; the profile is no longer
+        // client-writable.
         dailyChallengeCompleted = challengeDone;
       } else {
         // Fallback to legacy streak data if gamification profile is pending
@@ -334,10 +330,10 @@ export default function StudentDashboardOverview() {
 
   const pinBadgesMutation = useMutation({
     mutationFn: async (newPinnedIds: string[]) => {
-      const { error } = await supabase
-        .from("student_gamification_profile")
-        .update({ pinned_badge_ids: newPinnedIds, updated_at: new Date().toISOString() })
-        .eq("student_id", studentId!);
+      // Scoped RPC — the gamification profile is no longer client-writable.
+      const { error } = await supabase.rpc("update_pinned_badges", {
+        p_badge_ids: newPinnedIds,
+      });
       if (error) throw error;
       return newPinnedIds;
     },

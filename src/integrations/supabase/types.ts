@@ -2047,6 +2047,10 @@ export type Database = {
         }
         Returns: Json
       }
+      update_pinned_badges: {
+        Args: { p_badge_ids: string[] }
+        Returns: undefined
+      }
       update_student_cohort_points: {
         Args: { p_additional_ep: number; p_student_id: string }
         Returns: undefined
