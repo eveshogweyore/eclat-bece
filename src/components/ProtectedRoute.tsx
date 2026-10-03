@@ -169,6 +169,23 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
           roleData = userRole;
         }
 
+        // School onboarding gate: the school must complete its profile (school
+        // name) before dashboard access. Gmail signups are routed to onboarding
+        // by the auth callback; anyone skipping it is sent back. Password-path
+        // schools provision with a name and pass straight through.
+        if (requiredRole === "school") {
+          const { data: schoolProfile } = await supabase
+            .from("schools")
+            .select("school_name")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+
+          if (schoolProfile && !schoolProfile.school_name) {
+            navigateRef.current("/onboarding/school");
+            return;
+          }
+        }
+
         // Students are provisioned by parents, so they should already have a student record.
         if (requiredRole === "student") {
           const { data: studentData } = await supabase

@@ -159,22 +159,18 @@ export default function AuthPage({ roleOverride }: { roleOverride?: AuthRole }) 
       setIsLoading(true);
       localStorage.setItem("pendingRole", role);
 
-      // The Google redirect never sees this page's form, so the school name
-      // must be captured (and is required) before leaving — otherwise the
-      // provisioned school row gets no name.
+      // The school name is NOT required for the Gmail path — the onboarding
+      // step collects it (required) before dashboard access. If the admin
+      // happened to fill the field in, pass it along so the school row is
+      // provisioned with it; otherwise clear any stale value.
       if (role === "school") {
         const schoolInput = document.getElementById("signup-school-name") as HTMLInputElement | null;
         const schoolName = schoolInput?.value?.trim() || "";
-        if (!schoolName) {
-          toast({
-            title: "School name required",
-            description: "Enter your school's name above before continuing with Gmail.",
-            variant: "destructive",
-          });
-          schoolInput?.focus();
-          return;
+        if (schoolName) {
+          localStorage.setItem("pendingSchoolName", schoolName);
+        } else {
+          localStorage.removeItem("pendingSchoolName");
         }
-        localStorage.setItem("pendingSchoolName", schoolName);
       }
 
       const { error } = await supabase.auth.signInWithOAuth({
