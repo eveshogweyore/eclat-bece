@@ -85,6 +85,27 @@ serve(async (req) => {
       return json({ error: "Password must be between 6 and 100 characters" }, 400);
     }
 
+    // classId is client-supplied and the service-role insert below bypasses
+    // RLS, so ownership is verified here: only schools may assign a class, and
+    // only one of their own.
+    if (cleanClassId) {
+      if (!schoolRecord) {
+        return json({ error: "Only schools can assign students to classes" }, 403);
+      }
+      const { data: classRecord, error: classError } = await adminClient
+        .from("school_classes")
+        .select("id")
+        .eq("id", cleanClassId)
+        .eq("school_id", schoolRecord.id)
+        .maybeSingle();
+      if (classError) {
+        throw classError;
+      }
+      if (!classRecord) {
+        return json({ error: "Class not found in your school" }, 400);
+      }
+    }
+
     const { data: existingProfile, error: usernameError } = await adminClient
       .from("profiles")
       .select("id")
