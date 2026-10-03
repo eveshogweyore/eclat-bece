@@ -2,14 +2,15 @@ import { useState } from "react";
 import { Settings, Copy, Check, Building2, Mail, MapPin, Shield, Sun, Moon, Laptop, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SchoolLayout } from "@/components/school/SchoolLayout";
+import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
+import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { SchoolSettingsDialog } from "@/components/school/SchoolSettingsDialog";
 import { useSchoolData } from "@/hooks/useSchoolData";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 
 export function SchoolSettingsPage() {
-  const { school, refresh } = useSchoolData();
+  const { school, refresh, isLoading, error } = useSchoolData();
   const { theme, setTheme } = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -26,20 +27,28 @@ export function SchoolSettingsPage() {
     }
   };
 
+  if (isLoading) {
+    return <SchoolDataState loading />;
+  }
+  if (error) {
+    return <SchoolDataState error={error} onRetry={refresh} />;
+  }
+
   return (
-    <SchoolLayout
-      title="Settings"
-      subtitle="Manage school registration details, enrollment codes, and administrative preferences."
-      actions={
-        <Button
-          onClick={() => setSettingsOpen(true)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm shadow-sm"
-        >
-          <Settings className="mr-1.5 h-4 w-4" />
-          Update profile
-        </Button>
-      }
-    >
+    <>
+      <SchoolPageHeader
+        title="Settings"
+        subtitle="Manage school registration details, enrollment codes, and administrative preferences."
+        actions={
+          <Button
+            onClick={() => setSettingsOpen(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm shadow-sm"
+          >
+            <Settings className="mr-1.5 h-4 w-4" />
+            Update profile
+          </Button>
+        }
+      />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* School Profile Card */}
         <Card className="border-border bg-card text-card-foreground min-w-0 shadow-sm">
@@ -75,7 +84,7 @@ export function SchoolSettingsPage() {
                 <Building2 className="h-4 w-4 text-muted-foreground/70" />
                 <span>Institution Name</span>
               </div>
-              <span className="font-semibold text-foreground">{school?.school_name || "Lighthouse Academy"}</span>
+              <span className="font-semibold text-foreground">{school?.school_name || "—"}</span>
             </div>
 
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 p-3.5 text-xs sm:text-sm">
@@ -83,7 +92,7 @@ export function SchoolSettingsPage() {
                 <Mail className="h-4 w-4 text-muted-foreground/70" />
                 <span>Contact Email</span>
               </div>
-              <span className="text-foreground">{school?.contact_email || "admin@school.edu"}</span>
+              <span className="text-foreground">{school?.contact_email || "—"}</span>
             </div>
 
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 p-3.5 text-xs sm:text-sm">
@@ -91,46 +100,13 @@ export function SchoolSettingsPage() {
                 <MapPin className="h-4 w-4 text-muted-foreground/70" />
                 <span>Campus Location</span>
               </div>
-              <span className="text-foreground">{school?.address || "Lagos, Nigeria"}</span>
+              <span className="text-foreground">{school?.address || "—"}</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Operational Preferences Card */}
-        <Card className="border-border bg-card text-card-foreground min-w-0 shadow-sm">
-          <CardHeader className="border-b border-border pb-3">
-            <CardTitle className="text-base font-semibold text-foreground dark:text-[#71c9ed] flex items-center gap-2">
-              <Shield className="h-4 w-4 text-sky-600 dark:text-[#58c4e8]" />
-              Institutional Preferences
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 p-5 text-xs sm:text-sm">
-            {[
-              { title: "Enable automated practice reminders", desc: "Notify students when new assignments are due" },
-              { title: "Allow student self-enrollment", desc: "Permit learners to join using the school referral code" },
-              { title: "Publish monthly leaderboard standing", desc: "Display school ranking on public and national leaderboards" },
-              { title: "Parent performance notifications", desc: "Allow linked parents to view ward mock evaluation grades" },
-            ].map((pref) => (
-              <label
-                key={pref.title}
-                className="flex items-start justify-between gap-3 rounded-xl border border-border bg-muted/30 p-3.5 cursor-pointer hover:border-primary/40 transition-colors"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-foreground">{pref.title}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{pref.desc}</p>
-                </div>
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="h-4 w-4 mt-0.5 accent-primary rounded cursor-pointer"
-                />
-              </label>
-            ))}
-          </CardContent>
-        </Card>
-
         {/* Appearance & Theme Card */}
-        <Card className="border-border bg-card text-card-foreground min-w-0 lg:col-span-2 shadow-sm">
+        <Card className="border-border bg-card text-card-foreground min-w-0 shadow-sm">
           <CardHeader className="border-b border-border pb-3">
             <CardTitle className="text-base font-semibold text-foreground dark:text-[#71c9ed] flex items-center gap-2">
               <Palette className="h-4 w-4 text-sky-600 dark:text-[#58c4e8]" />
@@ -192,7 +168,7 @@ export function SchoolSettingsPage() {
         school={school}
         onSuccess={() => refresh()}
       />
-    </SchoolLayout>
+    </>
   );
 }
 

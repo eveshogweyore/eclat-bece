@@ -3,7 +3,8 @@ import { BookOpen, Plus, Calendar, Clock, CheckCircle2, ArrowRight, Check, X, Al
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { SchoolLayout } from "@/components/school/SchoolLayout";
+import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
+import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { SectionHeader } from "./schoolPageShared";
 import { SchoolAssignPracticeDialog } from "@/components/school/SchoolAssignPracticeDialog";
 import { useSchoolData, SchoolAssignmentItem } from "@/hooks/useSchoolData";
@@ -13,7 +14,7 @@ export function SchoolAssignmentsPage() {
   const [selectedSubmissionAssignment, setSelectedSubmissionAssignment] = useState<SchoolAssignmentItem | null>(null);
   const [submissionsOpen, setSubmissionsOpen] = useState(false);
 
-  const { school, students, assignments, assignmentStats, refresh } = useSchoolData();
+  const { school, students, assignments, assignmentStats, refresh, isLoading, error } = useSchoolData();
 
   const studentOptions = students.map((s) => ({
     id: s.id,
@@ -26,20 +27,28 @@ export function SchoolAssignmentsPage() {
     setSubmissionsOpen(true);
   };
 
+  if (isLoading) {
+    return <SchoolDataState loading />;
+  }
+  if (error) {
+    return <SchoolDataState error={error} onRetry={refresh} />;
+  }
+
   return (
-    <SchoolLayout
-      title="Assignments"
-      subtitle="Assign customized practice quizzes and track student completion rates."
-      actions={
-        <Button
-          onClick={() => setAssignOpen(true)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm shadow-sm"
-        >
-          <BookOpen className="mr-1.5 h-4 w-4" />
-          Assign practice
-        </Button>
-      }
-    >
+    <>
+      <SchoolPageHeader
+        title="Assignments"
+        subtitle="Assign customized practice quizzes and track student completion rates."
+        actions={
+          <Button
+            onClick={() => setAssignOpen(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm shadow-sm"
+          >
+            <BookOpen className="mr-1.5 h-4 w-4" />
+            Assign practice
+          </Button>
+        }
+      />
       {/* Metric Cards Header */}
       <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
@@ -250,7 +259,7 @@ export function SchoolAssignmentsPage() {
           </DialogContent>
         </Dialog>
       )}
-    </SchoolLayout>
+    </>
   );
 }
 

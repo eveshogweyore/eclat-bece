@@ -2,7 +2,9 @@ import { useState, useMemo } from "react";
 import { GraduationCap, Plus, Calendar, Clock, CheckCircle2, ArrowRight, Users, Trash2, BookOpen, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SchoolLayout } from "@/components/school/SchoolLayout";
+import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
+import { SchoolDataState } from "@/components/school/SchoolDataState";
+import { SchoolConfirmDialog } from "@/components/school/SchoolConfirmDialog";
 import { SchoolScheduleExamDialog } from "@/components/school/SchoolScheduleExamDialog";
 import { SchoolExamRosterDialog } from "@/components/school/SchoolExamRosterDialog";
 import { useSchoolData, SchoolExamItem } from "@/hooks/useSchoolData";
@@ -10,12 +12,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export function SchoolExamsPage() {
-  const { school, students, classes, exams, refresh, isLoading } = useSchoolData();
+  const { school, students, classes, exams, refresh, isLoading, error } = useSchoolData();
   const [filter, setFilter] = useState("all");
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedRosterExam, setSelectedRosterExam] = useState<SchoolExamItem | null>(null);
   const [rosterDialogOpen, setRosterDialogOpen] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
   const filteredExams = useMemo(() => {
     return exams.filter((e) => {
@@ -29,39 +32,48 @@ export function SchoolExamsPage() {
   const scheduledCount = exams.filter((e) => e.status === "Scheduled").length;
   const completedCount = exams.filter((e) => e.status === "Completed").length;
 
-  const handleDeleteExam = async (examId: string, examTitle: string) => {
-    if (!window.confirm(`Are you sure you want to cancel and delete "${examTitle}"?`)) {
-      return;
-    }
-
-    setIsDeletingId(examId);
-    try {
-      const { error } = await supabase.from("school_exams").delete().eq("id", examId);
-      if (error) throw error;
-      toast.success("Examination removed from schedule");
-      refresh();
-    } catch (err: any) {
-      console.error("Error deleting exam:", err);
-      toast.error(err.message || "Failed to remove examination");
-    } finally {
-      setIsDeletingId(null);
-    }
+  const confirmDeleteExam = () => {
+    if (!deleteTarget) return;
+    const { id, title } = deleteTarget;
+    setDeleteTarget(null);
+    void (async () => {
+      setIsDeletingId(id);
+      try {
+        const { error } = await supabase.from("school_exams").delete().eq("id", id);
+        if (error) throw error;
+        toast.success("Examination removed from schedule");
+        refresh();
+      } catch (err: any) {
+        console.error("Error deleting exam:", err);
+        toast.error(err.message || "Failed to remove examination");
+      } finally {
+        setIsDeletingId(null);
+      }
+    })();
   };
 
+  if (isLoading) {
+    return <SchoolDataState loading />;
+  }
+  if (error) {
+    return <SchoolDataState error={error} onRetry={refresh} />;
+  }
+
   return (
-    <SchoolLayout
-      title="Exams & Evaluations"
-      subtitle="Schedule formal mock evaluations, track BECE simulations, and review candidate seating."
-      actions={
-        <Button
-          onClick={() => setScheduleDialogOpen(true)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm"
-        >
-          <GraduationCap className="mr-1.5 h-4 w-4" />
-          Schedule exam
-        </Button>
-      }
-    >
+    <>
+      <SchoolPageHeader
+        title="Exams & Evaluations"
+        subtitle="Schedule formal mock evaluations, track BECE simulations, and review candidate seating."
+        actions={
+          <Button
+            onClick={() => setScheduleDialogOpen(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm"
+          >
+            <GraduationCap className="mr-1.5 h-4 w-4" />
+            Schedule exam
+          </Button>
+        }
+      />
       {/* Filter Tabs */}
       <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-3 text-xs">
         {[
@@ -174,7 +186,7 @@ export function SchoolExamsPage() {
                     variant="ghost"
                     size="sm"
                     disabled={isDeletingId === exam.id}
-                    onClick={() => handleDeleteExam(exam.id, exam.title)}
+                        onClick={() => setDeleteTarget({ id: exam.id, title: exam.title })}
                     className="h-8 px-2 text-xs text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="mr-1 h-3.5 w-3.5" />
@@ -218,7 +230,14 @@ export function SchoolExamsPage() {
         students={students}
         classes={classes}
       />
-    </SchoolLayout>
+      <SchoolConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={`Cancel and delete "${deleteTarget?.title}"?`}
+        description="The examination will be removed from the schedule. This action cannot be undone."
+        onConfirm={confirmDeleteExam}
+      />
+    </>
   );
 }
 

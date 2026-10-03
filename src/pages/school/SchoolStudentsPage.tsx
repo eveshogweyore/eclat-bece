@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { Users, Search, Plus, BookOpen, FileText, Sparkles, Trophy, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SchoolLayout } from "@/components/school/SchoolLayout";
+import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
+import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { CreateStudentDialog } from "@/components/school/SchoolCreateDialogs";
 import { SchoolBulkStudentDialog } from "@/components/school/SchoolBulkStudentDialog";
 import { StudentReportDialog } from "@/components/StudentReportDialog";
@@ -23,7 +24,7 @@ export function SchoolStudentsPage() {
   const [selectedAssignStudent, setSelectedAssignStudent] = useState<SchoolStudent | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
 
-  const { school, students, classes, gamificationTotals, refresh } = useSchoolData();
+  const { school, students, classes, gamificationTotals, refresh, isLoading, error } = useSchoolData();
 
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
@@ -50,30 +51,45 @@ export function SchoolStudentsPage() {
   const year9Count = students.filter((s) => s.class_year === "year_9").length;
   const year6Count = students.filter((s) => s.class_year === "year_6").length;
 
+  // Real pagination over the filtered roster
+  const PAGE_SIZE = 25;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedStudents = filteredStudents.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  if (isLoading) {
+    return <SchoolDataState loading />;
+  }
+  if (error) {
+    return <SchoolDataState error={error} onRetry={refresh} />;
+  }
+
   return (
-    <SchoolLayout
-      title="Students"
-      subtitle="Review active learners, diagnostic profiles, and performance records."
-      actions={
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setBulkDialogOpen(true)}
-            className="border-border bg-card text-foreground hover:bg-accent font-semibold text-xs sm:text-sm"
-          >
-            <Upload className="mr-1.5 h-4 w-4" />
-            Bulk Import CSV
-          </Button>
-          <Button
-            onClick={() => setStudentDialogOpen(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm"
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Add student
-          </Button>
-        </div>
-      }
-    >
+    <>
+      <SchoolPageHeader
+        title="Students"
+        subtitle="Review active learners, diagnostic profiles, and performance records."
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setBulkDialogOpen(true)}
+              className="border-border bg-card text-foreground hover:bg-accent font-semibold text-xs sm:text-sm"
+            >
+              <Upload className="mr-1.5 h-4 w-4" />
+              Bulk Import CSV
+            </Button>
+            <Button
+              onClick={() => setStudentDialogOpen(true)}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add student
+            </Button>
+          </div>
+        }
+      />
       {/* Metric Cards */}
       <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
@@ -102,7 +118,10 @@ export function SchoolStudentsPage() {
             <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
               placeholder="Search by student name, username, or unique ID..."
               className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
@@ -111,7 +130,10 @@ export function SchoolStudentsPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <select
               value={classFilter}
-              onChange={(e) => setClassFilter(e.target.value)}
+              onChange={(e) => {
+                setClassFilter(e.target.value);
+                setPage(1);
+              }}
               className="rounded-lg border border-border bg-card text-foreground px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
             >
               <option value="all">All Cohorts</option>
@@ -121,7 +143,10 @@ export function SchoolStudentsPage() {
 
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
               className="rounded-lg border border-border bg-card text-foreground px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
             >
               <option value="all">All Status</option>
@@ -178,7 +203,7 @@ export function SchoolStudentsPage() {
                   No students match your filter criteria.
                 </div>
               ) : (
-                filteredStudents.map((student) => (
+                pagedStudents.map((student) => (
                   <div
                     key={student.id}
                     className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_1.4fr] items-center border-b border-border/60 px-4 py-3 text-xs text-foreground hover:bg-muted/40 transition-colors"
@@ -248,11 +273,37 @@ export function SchoolStudentsPage() {
         )}
 
         {/* Footer info */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-3 text-[11px] text-slate-400 border-t border-[#2a3852]">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-3 text-[11px] text-muted-foreground border-t border-border">
           <span>
-            Showing {filteredStudents.length} of {students.length} enrolled students
+            Showing {filteredStudents.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–
+            {Math.min(safePage * PAGE_SIZE, filteredStudents.length)} of {filteredStudents.length} matching students
+            ({students.length} enrolled)
           </span>
-          <span className="text-slate-300">Page 1 of 1</span>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2.5 text-[11px]"
+                disabled={safePage <= 1}
+                onClick={() => setPage(safePage - 1)}
+              >
+                Previous
+              </Button>
+              <span className="font-medium text-foreground">
+                Page {safePage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2.5 text-[11px]"
+                disabled={safePage >= totalPages}
+                onClick={() => setPage(safePage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -297,7 +348,7 @@ export function SchoolStudentsPage() {
           }}
         />
       )}
-    </SchoolLayout>
+    </>
   );
 }
 

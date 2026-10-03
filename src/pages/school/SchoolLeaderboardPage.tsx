@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { RefreshCw, Building2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SchoolLayout } from "@/components/school/SchoolLayout";
+import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
+import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { CompetitionLeaderboards } from "@/components/CompetitionLeaderboards";
 import { ClassroomLeaderboardView, EnrichedStudentRecord } from "@/components/school/ClassroomLeaderboardView";
 import { StudentReportDialog } from "@/components/StudentReportDialog";
@@ -10,7 +11,7 @@ import { useLeaderboardData } from "@/hooks/useLeaderboardData";
 import { useSchoolData } from "@/hooks/useSchoolData";
 
 export function SchoolLeaderboardPage() {
-  const { school, students, gamificationTotals, refresh: refreshSchoolData } = useSchoolData();
+  const { school, students, gamificationTotals, refresh: refreshSchoolData, isLoading: schoolLoading, error: schoolError } = useSchoolData();
   const [activeTab, setActiveTab] = useState<"classroom" | "national">("classroom");
   const { data: nationalData, isLoading: loading, refetch: refetchNational } = useLeaderboardData(undefined, school?.id);
 
@@ -24,26 +25,34 @@ export function SchoolLeaderboardPage() {
     return Math.max(...students.map((s) => s.league_tier || 1));
   }, [students]);
 
+  if (schoolLoading) {
+    return <SchoolDataState loading />;
+  }
+  if (schoolError) {
+    return <SchoolDataState error={schoolError} onRetry={refreshSchoolData} />;
+  }
+
   return (
-    <SchoolLayout
-      title="Leaderboards & Competitions"
-      subtitle="Track private classroom standings, multi-pillar EP progress, and national arena leaderboards."
-      actions={
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            refetchNational();
-            refreshSchoolData();
-          }}
-          disabled={loading}
-          className="text-xs sm:text-sm"
-        >
-          <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          Refresh rankings
-        </Button>
-      }
-    >
+    <>
+      <SchoolPageHeader
+        title="Leaderboards & Competitions"
+        subtitle="Track private classroom standings, multi-pillar EP progress, and national arena leaderboards."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchNational();
+              refreshSchoolData();
+            }}
+            disabled={loading}
+            className="text-xs sm:text-sm"
+          >
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh rankings
+          </Button>
+        }
+      />
       {/* Institutional Gamification Metrics Header */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {[
@@ -153,7 +162,7 @@ export function SchoolLeaderboardPage() {
           avatar={selectedStudent.avatar || "🎓"}
         />
       )}
-    </SchoolLayout>
+    </>
   );
 }
 

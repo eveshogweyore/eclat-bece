@@ -2,13 +2,14 @@ import { useState, useMemo } from "react";
 import { Briefcase, Search, Plus, Mail, Phone, Users, Building2, BookOpen, Edit2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SchoolLayout } from "@/components/school/SchoolLayout";
+import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
+import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { SchoolAddTeacherDialog } from "@/components/school/SchoolAddTeacherDialog";
 import { SchoolEditTeacherDialog } from "@/components/school/SchoolEditTeacherDialog";
 import { useSchoolData, SchoolTeacherItem } from "@/hooks/useSchoolData";
 
 export function SchoolTeachersPage() {
-  const { school, teachers, classes, refresh, isLoading } = useSchoolData();
+  const { school, teachers, classes, refresh, isLoading, error } = useSchoolData();
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -42,20 +43,28 @@ export function SchoolTeachersPage() {
     });
   }, [teachers, search, deptFilter]);
 
+  if (isLoading) {
+    return <SchoolDataState loading />;
+  }
+  if (error) {
+    return <SchoolDataState error={error} onRetry={refresh} />;
+  }
+
   return (
-    <SchoolLayout
-      title="Teacher Directory"
-      subtitle="Manage faculty assignments, department allocations, and lead instructors."
-      actions={
-        <Button
-          onClick={() => setAddDialogOpen(true)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm"
-        >
-          <Plus className="mr-1.5 h-4 w-4" />
-          Add teacher
-        </Button>
-      }
-    >
+    <>
+      <SchoolPageHeader
+        title="Teacher Directory"
+        subtitle="Manage faculty assignments, department allocations, and lead instructors."
+        actions={
+          <Button
+            onClick={() => setAddDialogOpen(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            Add teacher
+          </Button>
+        }
+      />
       {/* Search Bar & Department Filter */}
       <div className="mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 text-xs shadow-sm">
         <div className="flex items-center gap-2 flex-1 rounded-lg border border-border bg-muted/60 px-3 py-2 text-foreground focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20">
@@ -229,7 +238,7 @@ export function SchoolTeachersPage() {
           onSaved={() => refresh()}
         />
       )}
-    </SchoolLayout>
+    </>
   );
 }
 

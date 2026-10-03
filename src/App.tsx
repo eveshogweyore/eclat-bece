@@ -15,6 +15,7 @@ import { TermsOfService } from "./components/TermsOfService";
 import { StudentLayout } from "./components/StudentLayout";
 import { AdminLayout } from "./components/AdminLayout";
 import { ParentLayout } from "./components/parent/ParentLayout";
+import { SchoolLayout } from "./components/school/SchoolLayout";
 // Landing page stays eager: it is the most common entry point and should
 // render without an extra chunk round-trip.
 import Index from "./pages/Index";
@@ -250,49 +251,19 @@ const App = () => (
                 } />
                 <Route path="/dashboard/school" element={
                   <ProtectedRoute requiredRole="school">
-                    <SchoolOverviewPage />
+                    <SchoolLayout />
                   </ProtectedRoute>
-                } />
-                <Route path="/dashboard/school/students" element={
-                  <ProtectedRoute requiredRole="school">
-                    <SchoolStudentsPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/school/teachers" element={
-                  <ProtectedRoute requiredRole="school">
-                    <SchoolTeachersPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/school/classes" element={
-                  <ProtectedRoute requiredRole="school">
-                    <SchoolClassesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/school/assignments" element={
-                  <ProtectedRoute requiredRole="school">
-                    <SchoolAssignmentsPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/school/reports" element={
-                  <ProtectedRoute requiredRole="school">
-                    <SchoolReportsPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/school/exams" element={
-                  <ProtectedRoute requiredRole="school">
-                    <SchoolExamsPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/school/leaderboard" element={
-                  <ProtectedRoute requiredRole="school">
-                    <SchoolLeaderboardPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/school/settings" element={
-                  <ProtectedRoute requiredRole="school">
-                    <SchoolSettingsPage />
-                  </ProtectedRoute>
-                } />
+                }>
+                  <Route index element={<SchoolOverviewPage />} />
+                  <Route path="students" element={<SchoolStudentsPage />} />
+                  <Route path="teachers" element={<SchoolTeachersPage />} />
+                  <Route path="classes" element={<SchoolClassesPage />} />
+                  <Route path="assignments" element={<SchoolAssignmentsPage />} />
+                  <Route path="reports" element={<SchoolReportsPage />} />
+                  <Route path="exams" element={<SchoolExamsPage />} />
+                  <Route path="leaderboard" element={<SchoolLeaderboardPage />} />
+                  <Route path="settings" element={<SchoolSettingsPage />} />
+                </Route>
                 <Route path="/quiz" element={
                   <ProtectedRoute>
                     <QuizPage />

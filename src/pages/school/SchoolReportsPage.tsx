@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { ChartColumnBig, BarChart3, TrendingUp, Award, Download, AlertTriangle, CheckCircle2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SchoolLayout } from "@/components/school/SchoolLayout";
+import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
+import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { ClassAnalyticsDialog } from "@/components/ClassAnalyticsDialog";
 import { CurriculumWeaknessHeatmap } from "@/components/school/CurriculumWeaknessHeatmap";
 import { SchoolAssignPracticeDialog } from "@/components/school/SchoolAssignPracticeDialog";
@@ -26,7 +27,7 @@ export function SchoolReportsPage() {
     cohort: "year_9",
   });
 
-  const { school, students, topicMastery, cohortAverages, assignmentStats, refresh } = useSchoolData();
+  const { school, students, topicMastery, cohortAverages, assignmentStats, quizScores, refresh, isLoading, error } = useSchoolData();
 
   // Real CSV Export
   const handleExportCSV = () => {
@@ -34,6 +35,13 @@ export function SchoolReportsPage() {
       toast.error("No student records available to export");
       return;
     }
+
+    // Neutralize spreadsheet formula injection: a cell starting with =,+,-,@
+    // would execute as a formula when opened in Excel/Sheets.
+    const csvSafe = (value: string) => {
+      const escaped = value.replace(/"/g, '""');
+      return `"${/^[=+\-@\t\r]/.test(escaped) ? `'${escaped}` : escaped}"`;
+    };
 
     const headers = [
       "Student Name",
@@ -53,11 +61,11 @@ export function SchoolReportsPage() {
     ];
 
     const rows = students.map((s) => [
-      `"${s.name.replace(/"/g, '""')}"`,
-      `"${s.username.replace(/"/g, '""')}"`,
-      `"${s.unique_id || ""}"`,
-      `"${s.class_year === "year_9" ? "Year 9 (BECE)" : s.class_year === "year_6" ? "Year 6 (Common Entrance)" : "Unassigned"}"`,
-      `"${s.status}"`,
+      csvSafe(s.name),
+      csvSafe(s.username),
+      csvSafe(s.unique_id || ""),
+      csvSafe(s.class_year === "year_9" ? "Year 9 (BECE)" : s.class_year === "year_6" ? "Year 6 (Common Entrance)" : "Unassigned"),
+      csvSafe(s.status),
       s.lifetime_ep || 0,
       s.current_level || 1,
       s.weekly_ep || 0,
@@ -69,7 +77,8 @@ export function SchoolReportsPage() {
       `${s.mastery_percentage || 0}%`,
     ]);
 
-    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    // BOM keeps Excel on UTF-8 for non-ASCII names.
+    const csvContent = `\uFEFF${[headers.join(","), ...rows.map((r) => r.join(","))].join("\n")}`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -85,14 +94,19 @@ export function SchoolReportsPage() {
     toast.success("School performance report downloaded successfully!");
   };
 
-  // Dynamic Subject Proficiencies from topicMastery
+  // Subject proficiencies come from real mastery records; the core four are
+  // listed (at 0) only when no mastery data exists yet — never fabricated
+  // from the school-wide average.
   const subjectProficiencies = useMemo(() => {
-    const subjects = ["Mathematics", "English Language", "Basic Science", "Social Studies"];
+    const masterySubjects = [...new Set(topicMastery.map((m) => m.subject))];
+    const subjects = masterySubjects.length > 0
+      ? masterySubjects
+      : ["Mathematics", "English Language", "Basic Science", "Social Studies"];
     return subjects.map((sub) => {
       const records = topicMastery.filter((m) => m.subject.toLowerCase() === sub.toLowerCase());
       const score = records.length > 0
         ? Math.round(records.reduce((acc, m) => acc + m.rolling_accuracy, 0) / records.length)
-        : cohortAverages.overall > 0 ? cohortAverages.overall : 0;
+        : 0;
 
       return {
         subject: sub,
@@ -101,7 +115,7 @@ export function SchoolReportsPage() {
         testedCount: records.length,
       };
     });
-  }, [topicMastery, cohortAverages.overall]);
+  }, [topicMastery]);
 
   // Dynamic BECE Readiness Index
   const beceReadiness = useMemo(() => {
@@ -138,33 +152,41 @@ export function SchoolReportsPage() {
       }));
   }, [students, analyticsCohort]);
 
+  if (isLoading) {
+    return <SchoolDataState loading />;
+  }
+  if (error) {
+    return <SchoolDataState error={error} onRetry={refresh} />;
+  }
+
   return (
-    <SchoolLayout
-      title="Reports & Analytics"
-      subtitle="Track institutional performance, subject proficiencies, and cohort benchmarks."
-      actions={
-        <>
-          <Button
-            variant="outline"
-            onClick={handleExportCSV}
-            className="text-xs sm:text-sm"
-          >
-            <Download className="mr-1.5 h-3.5 w-3.5" />
-            Export CSV
-          </Button>
-          <Button
-            onClick={() => {
-              setAnalyticsCohort("Year 9 (BECE)");
-              setAnalyticsOpen(true);
-            }}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm shadow-sm"
-          >
-            <ChartColumnBig className="mr-1.5 h-4 w-4" />
-            Detailed analytics
-          </Button>
-        </>
-      }
-    >
+    <>
+      <SchoolPageHeader
+        title="Reports & Analytics"
+        subtitle="Track institutional performance, subject proficiencies, and cohort benchmarks."
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
+              className="text-xs sm:text-sm"
+            >
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              Export CSV
+            </Button>
+            <Button
+              onClick={() => {
+                setAnalyticsCohort("Year 9 (BECE)");
+                setAnalyticsOpen(true);
+              }}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm shadow-sm"
+            >
+              <ChartColumnBig className="mr-1.5 h-4 w-4" />
+              Detailed analytics
+            </Button>
+          </>
+        }
+      />
       {/* Tab Navigation */}
       <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-border pb-3 text-xs">
         {[
@@ -271,10 +293,14 @@ export function SchoolReportsPage() {
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   Based on mock exams, drills, and curriculum mastery,{" "}
-                  <strong className="text-foreground">
-                    {beceReadiness.distinctionRate > 0 ? `${beceReadiness.distinctionRate}%` : "learners"}
-                  </strong>{" "}
-                  of candidates in Year 9 are trending toward distinction and credit grades in core subjects.
+                  {beceReadiness.distinctionRate > 0 ? (
+                    <>
+                      <strong className="text-foreground">{beceReadiness.distinctionRate}%</strong> of candidates in
+                      Year 9 are trending toward distinction and credit grades in core subjects.
+                    </>
+                  ) : (
+                    <>no Year 9 candidates are trending toward distinction yet — quiz and mock-exam results will build this outlook.</>
+                  )}
                 </p>
               </div>
 
@@ -370,6 +396,7 @@ export function SchoolReportsPage() {
         onOpenChange={setAnalyticsOpen}
         className={analyticsCohort}
         students={analyticsStudents}
+        quizResults={quizScores}
       />
 
       {/* Assign Focus Practice Modal */}
@@ -388,7 +415,7 @@ export function SchoolReportsPage() {
           }}
         />
       )}
-    </SchoolLayout>
+    </>
   );
 }
 

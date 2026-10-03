@@ -103,6 +103,7 @@ interface SchoolDataset {
   assignments: SchoolAssignmentItem[];
   exams: SchoolExamItem[];
   teachers: SchoolTeacherItem[];
+  quizScores: Array<{ id: string; student_id: string; score: number; subject: string; total_questions: number; correct_answers: number; completed_at: string }>;
 }
 
 async function fetchSchoolDataset(): Promise<SchoolDataset> {
@@ -120,17 +121,30 @@ async function fetchSchoolDataset(): Promise<SchoolDataset> {
 
   let currentSchool = existingSchool;
   if (!currentSchool) {
-    const { data: newSchool, error: createErr } = await supabase
+    // provision-user creates this row at signup; this fallback is race-safe so
+    // two concurrent cold mounts cannot double-insert.
+    const { error: createErr } = await supabase
       .from("schools")
-      .insert({
-        user_id: user.id,
-        school_name: user.user_metadata?.full_name || user.user_metadata?.school_name || "My School",
-      })
-      .select("*")
-      .single();
-
+      .upsert(
+        {
+          user_id: user.id,
+          school_name: user.user_metadata?.full_name || user.user_metadata?.school_name || "My School",
+        },
+        { onConflict: "user_id", ignoreDuplicates: true }
+      );
     if (createErr) throw createErr;
-    currentSchool = newSchool;
+
+    const { data: refetchedSchool, error: refetchErr } = await supabase
+      .from("schools")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (refetchErr) throw refetchErr;
+    currentSchool = refetchedSchool;
+  }
+
+  if (!currentSchool) {
+    throw new Error("School profile not found. Please sign out and back in, or contact support.");
   }
 
   // 2. Fetch Linked Students, Classes, Assignments, Exams & Teachers in parallel
@@ -173,7 +187,7 @@ async function fetchSchoolDataset(): Promise<SchoolDataset> {
 
   // 3. Parallel Batch Fetching of Dependent Metrics
   let profiles: Array<{ id: string; full_name: string | null; username: string | null; unique_id: string; avatar_url: string | null }> = [];
-  let quizResults: Array<{ student_id: string; score: number }> = [];
+  let quizResults: Array<{ id: string; student_id: string; score: number; subject: string; total_questions: number; correct_answers: number; completed_at: string }> = [];
   let gamificationProfiles: Array<{ student_id: string; lifetime_ep: number; weekly_ep: number; current_level: number; streak_count: number; current_league_tier: number }> = [];
   let masteries: Array<{ student_id: string; subject: string; topic: string; rolling_accuracy: number; status: string; total_attempted: number }> = [];
 
@@ -182,9 +196,11 @@ async function fetchSchoolDataset(): Promise<SchoolDataset> {
       userIds.length > 0
         ? supabase.from("profiles").select("id, full_name, username, unique_id, avatar_url").in("id", userIds)
         : Promise.resolve({ data: [] as typeof profiles }),
-      supabase.from("quiz_results").select("student_id, score").in("student_id", studentIds),
+      // Safety caps: per-student metric pulls are unbounded by design (lifetime
+      // aggregates), but a runaway roster should not exhaust browser memory.
+      supabase.from("quiz_results").select("id, student_id, score, subject, total_questions, correct_answers, completed_at").in("student_id", studentIds).limit(5000),
       supabase.from("student_gamification_profile").select("student_id, lifetime_ep, weekly_ep, current_level, streak_count, current_league_tier").in("student_id", studentIds),
-      supabase.from("student_topic_mastery").select("student_id, subject, topic, rolling_accuracy, status, total_attempted").in("student_id", studentIds),
+      supabase.from("student_topic_mastery").select("student_id, subject, topic, rolling_accuracy, status, total_attempted").in("student_id", studentIds).limit(5000),
     ]);
 
     profiles = profRes.data || [];
@@ -438,6 +454,7 @@ async function fetchSchoolDataset(): Promise<SchoolDataset> {
     assignments: parsedAssignments,
     exams: parsedExams,
     teachers: enrichedTeachers,
+    quizScores: quizResults,
   };
 }
 
@@ -460,6 +477,7 @@ export function useSchoolData() {
   const assignments = query.data?.assignments ?? [];
   const exams = query.data?.exams ?? [];
   const teachers = query.data?.teachers ?? [];
+  const quizScores = query.data?.quizScores ?? [];
 
   // Computed Institutional Aggregates
   const assignmentStats: AssignmentStats = useMemo(() => {
@@ -504,6 +522,7 @@ export function useSchoolData() {
     teachers,
     cohortAverages,
     gamificationTotals,
+    quizScores,
     isLoading: query.isLoading,
     error: query.error instanceof Error ? query.error.message : null,
     refresh: async () => {

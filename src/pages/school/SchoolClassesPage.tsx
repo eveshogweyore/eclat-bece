@@ -2,37 +2,44 @@ import { useState, useMemo } from "react";
 import { Building2, Plus, Search, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SchoolLayout } from "@/components/school/SchoolLayout";
+import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
+import { SchoolDataState } from "@/components/school/SchoolDataState";
+import { SchoolConfirmDialog } from "@/components/school/SchoolConfirmDialog";
 import { CreateClassDialog } from "@/components/school/SchoolCreateDialogs";
 import { useSchoolData } from "@/hooks/useSchoolData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export function SchoolClassesPage() {
-  const { school, students, classes, isLoading, refresh: refreshSchoolData } = useSchoolData();
+  const { school, students, classes, isLoading, error, refresh: refreshSchoolData } = useSchoolData();
   const [classDialogOpen, setClassDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
-  const handleDeleteClass = async (classId: string, className: string) => {
-    if (!window.confirm(`Are you sure you want to delete class "${className}"?`)) return;
-    try {
-      setDeletingId(classId);
-      const { error } = await supabase
-        .from("school_classes")
-        .delete()
-        .eq("id", classId);
+  const confirmDeleteClass = () => {
+    if (!deleteTarget) return;
+    const { id, name } = deleteTarget;
+    setDeleteTarget(null);
+    void (async () => {
+      try {
+        setDeletingId(id);
+        const { error } = await supabase
+          .from("school_classes")
+          .delete()
+          .eq("id", id);
 
-      if (error) throw error;
-      toast.success(`Class "${className}" deleted`);
-      refreshSchoolData();
-    } catch (err: any) {
-      console.error("Error deleting class:", err);
-      toast.error(err?.message || "Failed to delete class");
-    } finally {
-      setDeletingId(null);
-    }
+        if (error) throw error;
+        toast.success(`Class "${name}" deleted`);
+        refreshSchoolData();
+      } catch (err: any) {
+        console.error("Error deleting class:", err);
+        toast.error(err?.message || "Failed to delete class");
+      } finally {
+        setDeletingId(null);
+      }
+    })();
   };
 
   const filteredClasses = useMemo(() => {
@@ -58,20 +65,28 @@ export function SchoolClassesPage() {
   const beceCandidates = students.filter((s) => s.class_year === "year_9").length;
   const commonEntranceCandidates = students.filter((s) => s.class_year === "year_6").length;
 
+  if (isLoading) {
+    return <SchoolDataState loading />;
+  }
+  if (error) {
+    return <SchoolDataState error={error} onRetry={refreshSchoolData} />;
+  }
+
   return (
-    <SchoolLayout
-      title="Classes & Cohorts"
-      subtitle="Manage examination cohorts, class streams, and assigned faculty."
-      actions={
-        <Button
-          onClick={() => setClassDialogOpen(true)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm shadow-sm"
-        >
-          <Plus className="mr-1.5 h-4 w-4" />
-          Add class
-        </Button>
-      }
-    >
+    <>
+      <SchoolPageHeader
+        title="Classes & Cohorts"
+        subtitle="Manage examination cohorts, class streams, and assigned faculty."
+        actions={
+          <Button
+            onClick={() => setClassDialogOpen(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm shadow-sm"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            Add class
+          </Button>
+        }
+      />
       {/* Metric Cards */}
       <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
@@ -186,7 +201,7 @@ export function SchoolClassesPage() {
                     variant="ghost"
                     size="sm"
                     disabled={deletingId === klass.id}
-                    onClick={() => handleDeleteClass(klass.id, klass.name)}
+                        onClick={() => setDeleteTarget({ id: klass.id, name: klass.name })}
                     className="h-7 px-2 text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -203,7 +218,14 @@ export function SchoolClassesPage() {
         onOpenChange={setClassDialogOpen}
         onCreated={refreshSchoolData}
       />
-    </SchoolLayout>
+      <SchoolConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={`Delete class "${deleteTarget?.name}"?`}
+        description="Students enrolled in this class will be unassigned. This action cannot be undone."
+        onConfirm={confirmDeleteClass}
+      />
+    </>
   );
 }
 

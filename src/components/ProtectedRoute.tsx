@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -49,6 +49,13 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
   const [isChecking, setIsChecking] = useState(true);
   const navigate = useNavigate();
 
+  // useNavigate returns a new identity on every location change in React
+  // Router v6; depending on it would re-run the auth check (and the
+  // full-screen gate) on every navigation. Navigate targets here are all
+  // absolute paths, so a ref keeps the persistent listener correct.
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+
   useEffect(() => {
     checkAuthStatus();
 
@@ -60,20 +67,21 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
           setIsChecking(false);
           const pathname = window.location.pathname;
           if (pathname.includes("/parent")) {
-            navigate("/parent-login");
+            navigateRef.current("/parent-login");
           } else if (pathname.includes("/school")) {
-            navigate("/school-login");
+            navigateRef.current("/school-login");
           } else if (pathname.includes("/admin")) {
-            navigate("/admin/login");
+            navigateRef.current("/admin/login");
           } else {
-            navigate("/student-login");
+            navigateRef.current("/student-login");
           }
         }
       }
     );
 
     return () => subscription?.unsubscribe();
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requiredRole]);
 
   const checkAuthStatus = async () => {
     try {
@@ -82,13 +90,13 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
       if (!session?.user) {
         const pathname = window.location.pathname;
         if (pathname.includes("/parent")) {
-          navigate("/parent-login");
+          navigateRef.current("/parent-login");
         } else if (pathname.includes("/school")) {
-          navigate("/school-login");
+          navigateRef.current("/school-login");
         } else if (pathname.includes("/admin")) {
-          navigate("/admin/login");
+          navigateRef.current("/admin/login");
         } else {
-          navigate("/student-login");
+          navigateRef.current("/student-login");
         }
         setIsAuthorized(false);
         return;
@@ -101,7 +109,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
           user_id: session.user.id,
           ...(requiredRole ? { role: requiredRole } : {}),
         });
-        navigate(`/verify-email?${verifyParams.toString()}`);
+          navigateRef.current(`/verify-email?${verifyParams.toString()}`);
         return;
       }
 
@@ -133,17 +141,17 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
             .maybeSingle();
 
           if (!userRole) {
-            navigate("/auth/login/role-selection");
+            navigateRef.current("/auth/login/role-selection");
             return;
           }
 
           // If they have a role but it's not the required one, route to their dashboard
           if (userRole.role !== requiredRole) {
-            if (userRole.role === "student") navigate("/dashboard/student");
-            else if (userRole.role === "parent") navigate("/dashboard/parent");
-            else if (userRole.role === "school") navigate("/dashboard/school");
-            else if (userRole.role === "admin") navigate("/admin");
-            else navigate("/auth/login/role-selection");
+            if (userRole.role === "student") navigateRef.current("/dashboard/student");
+            else if (userRole.role === "parent") navigateRef.current("/dashboard/parent");
+            else if (userRole.role === "school") navigateRef.current("/dashboard/school");
+            else if (userRole.role === "admin") navigateRef.current("/admin");
+            else navigateRef.current("/auth/login/role-selection");
             return;
           }
 
@@ -160,7 +168,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
             .maybeSingle();
 
           if (!studentData) {
-            navigate("/student-login");
+            navigateRef.current("/student-login");
             return;
           }
         }
@@ -171,13 +179,13 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
       console.error("Auth check error:", error);
       const pathname = window.location.pathname;
       if (pathname.includes("/parent")) {
-        navigate("/parent-login");
+        navigateRef.current("/parent-login");
       } else if (pathname.includes("/school")) {
-        navigate("/school-login");
+        navigateRef.current("/school-login");
       } else if (pathname.includes("/admin")) {
-        navigate("/admin/login");
+        navigateRef.current("/admin/login");
       } else {
-        navigate("/student-login");
+        navigateRef.current("/student-login");
       }
     } finally {
       setIsChecking(false);

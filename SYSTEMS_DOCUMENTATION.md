@@ -1194,7 +1194,9 @@ All admin actions are logged to `admin_audit_log` table via `log_admin_action` f
 - `/dashboard/school/leaderboard` - `SchoolLeaderboardPage`
 - `/dashboard/school/settings` - `SchoolSettingsPage`
 
-**Data layer:** the `useSchoolData` hook aggregates schools, students, school_classes, practice_assignments, school_exams, school_teachers, profiles, quiz_results, and gamification data client-side.
+**Data layer:** the `useSchoolData` hook (TanStack Query, key `queryKeys.school`) aggregates schools, students, school_classes, practice_assignments, school_exams, school_teachers, profiles, quiz_results, and gamification data client-side in one cached query shared by all nine pages; per-student metric pulls are capped and the hook surfaces `isLoading`/`error` that every page renders through `SchoolDataState` (loading spinner or error + retry — never a fake empty state).
+
+**Security hardening (2026-10):** the school portal runs as a persistent layout route (`SchoolLayout` + `<Outlet/>` + local Suspense). RLS is fully tenant-scoped — the former platform-wide `USING (true)` reads on `students`, `profiles`, and `quiz_results` were removed; features that needed broad reads now use scoped SECURITY DEFINER RPCs (`get_platform_student_rank`, `search_duel_opponents`, `lookup_student_by_code`, `lookup_parent_by_code`). Schools may only assign practice to their own students (trigger-enforced), students cannot change their own `school_id`/`class_id` (parent linking is allowed only for the first `NULL → parent` transition), exams/teachers may only reference same-school classes, and the league cohort RPCs reject unauthenticated callers while keeping the service-role path for `complete-quiz-session`.
 
 ### School Onboarding
 

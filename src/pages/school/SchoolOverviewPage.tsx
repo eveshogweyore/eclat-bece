@@ -13,14 +13,15 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SchoolLayout } from "@/components/school/SchoolLayout";
+import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
+import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { CreateClassDialog, CreateStudentDialog } from "@/components/school/SchoolCreateDialogs";
 import { StatCard } from "./schoolPageShared";
 import { useSchoolData } from "@/hooks/useSchoolData";
 
 export function SchoolOverviewPage() {
   const navigate = useNavigate();
-  const { school, students, classes, assignmentStats, cohortAverages, gamificationTotals, topicMastery, refresh } = useSchoolData();
+  const { school, students, classes, assignmentStats, cohortAverages, gamificationTotals, topicMastery, refresh, isLoading, error } = useSchoolData();
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
   const [classDialogOpen, setClassDialogOpen] = useState(false);
 
@@ -66,9 +67,9 @@ export function SchoolOverviewPage() {
     },
   ];
 
-  // Best performing subject
+  // Best performing subject (null until real mastery data exists — no fabrication)
   const topSubjectInfo = useMemo(() => {
-    if (topicMastery.length === 0) return { subject: "Mathematics", score: cohortAverages.overall || 75 };
+    if (topicMastery.length === 0) return null;
     const subjectMap: Record<string, { total: number; count: number }> = {};
     topicMastery.forEach((m) => {
       if (!subjectMap[m.subject]) subjectMap[m.subject] = { total: 0, count: 0 };
@@ -81,41 +82,49 @@ export function SchoolOverviewPage() {
       if (avg > best.score) best = { subject: sub, score: avg };
     });
     return best;
-  }, [topicMastery, cohortAverages.overall]);
+  }, [topicMastery]);
 
   const topStudents = gamificationTotals.topAchievers.slice(0, 3);
   const medals = ["🥇", "🥈", "🥉"];
 
+  if (isLoading) {
+    return <SchoolDataState loading />;
+  }
+  if (error) {
+    return <SchoolDataState error={error} onRetry={refresh} />;
+  }
+
   return (
-    <SchoolLayout
-      title={`Welcome back${school?.school_name ? `, ${school.school_name}` : ""}! 👋`}
-      subtitle="Here's what's happening across your school this week."
-      actions={
-        <>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/dashboard/school/reports")}
-            className="border-border bg-card text-foreground hover:bg-accent h-9 text-xs sm:text-sm font-medium"
-          >
-            View reports
-          </Button>
-          <Button
-            onClick={() => setStudentDialogOpen(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 text-xs sm:text-sm font-semibold"
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Add student
-          </Button>
-          <Button
-            onClick={() => navigate("/dashboard/school/assignments")}
-            className="bg-sky-500 text-white hover:bg-sky-600 dark:bg-[#3bc2f3] dark:text-[#041c2d] dark:hover:bg-[#6cd8ff] h-9 text-xs sm:text-sm font-semibold"
-          >
-            <BookOpen className="mr-1.5 h-3.5 w-3.5" />
-            Assign practice
-          </Button>
-        </>
-      }
-    >
+    <>
+      <SchoolPageHeader
+        title={`Welcome back${school?.school_name ? `, ${school.school_name}` : ""}! 👋`}
+        subtitle="Here's what's happening across your school this week."
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/dashboard/school/reports")}
+              className="border-border bg-card text-foreground hover:bg-accent h-9 text-xs sm:text-sm font-medium"
+            >
+              View reports
+            </Button>
+            <Button
+              onClick={() => setStudentDialogOpen(true)}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 text-xs sm:text-sm font-semibold"
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Add student
+            </Button>
+            <Button
+              onClick={() => navigate("/dashboard/school/assignments")}
+              className="bg-sky-500 text-white hover:bg-sky-600 dark:bg-[#3bc2f3] dark:text-[#041c2d] dark:hover:bg-[#6cd8ff] h-9 text-xs sm:text-sm font-semibold"
+            >
+              <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+              Assign practice
+            </Button>
+          </>
+        }
+      />
       {/* Stat Cards - Fully Responsive */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         {statCards.map((card) => (
@@ -169,7 +178,9 @@ export function SchoolOverviewPage() {
             <div className="pt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
               <span className="rounded-md border border-border bg-muted/50 px-3 py-1.5 flex items-center gap-1.5 text-foreground font-medium">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                Top subject: {topSubjectInfo.subject} ({topSubjectInfo.score > 0 ? `${topSubjectInfo.score}%` : "—"})
+                {topSubjectInfo
+                  ? `Top subject: ${topSubjectInfo.subject} (${topSubjectInfo.score > 0 ? `${topSubjectInfo.score}%` : "-"})`
+                  : "Top subject: awaiting mastery data"}
               </span>
               <span className="rounded-md border border-border bg-muted/50 px-3 py-1.5">
                 Target: 75% curriculum standard
@@ -240,7 +251,7 @@ export function SchoolOverviewPage() {
         onOpenChange={setClassDialogOpen}
         onCreated={() => refresh()}
       />
-    </SchoolLayout>
+    </>
   );
 }
 
