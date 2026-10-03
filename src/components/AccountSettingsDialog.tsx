@@ -88,14 +88,15 @@ export const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDia
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Find parent by unique_id
-      const { data: parentProfile, error: parentError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("unique_id", parentCode.trim().toUpperCase())
-        .single();
+      // Resolve the parent through a scoped SECURITY DEFINER RPC —
+      // profiles are no longer readable across accounts.
+      const { data: parentMatch, error: parentError } = await supabase
+        .rpc("lookup_parent_by_code", { p_code: parentCode.trim() })
+        .maybeSingle();
 
-      if (parentError || !parentProfile) {
+      if (parentError) throw parentError;
+
+      if (!parentMatch) {
         toast({
           title: "Error",
           description: "Invalid parent code. Please check and try again.",
@@ -104,31 +105,18 @@ export const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDia
         return;
       }
 
-      // Check if the profile belongs to a parent
-      const { data: parentData, error: parentCheckError } = await supabase
-        .from("parents")
-        .select("id")
-        .eq("user_id", parentProfile.id)
-        .single();
+      const parentData = parentMatch;
 
-      if (parentCheckError || !parentData) {
-        toast({
-          title: "Error",
-          description: "This code does not belong to a parent account.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Update student with parent_id
+      // Update student with parent_id. The self-update guard only permits this
+      // while no parent is linked yet (NULL -> parent).
       const { error: updateError } = await supabase
         .from("students")
-        .update({ parent_id: parentData.id })
+        .update({ parent_id: parentData.parent_id })
         .eq("user_id", user.id);
 
       if (updateError) throw updateError;
 
-      setCurrentParentId(parentData.id);
+      setCurrentParentId(parentData.parent_id);
       setParentCode("");
       
       toast({

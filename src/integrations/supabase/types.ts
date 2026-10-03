@@ -1914,6 +1914,15 @@ export type Database = {
         }[]
       }
       get_invitation_details: { Args: { _token: string }; Returns: Json }
+      get_platform_student_rank: {
+        Args: never
+        Returns: {
+          points_rank: number
+          points_total: number
+          score_rank: number
+          score_total: number
+        }[]
+      }
       get_public_leaderboard: { Args: never; Returns: Json }
       get_required_ep_for_level: { Args: { p_level: number }; Returns: number }
       get_student_league_cohort: {
@@ -1952,11 +1961,30 @@ export type Database = {
         }
         Returns: string
       }
+      lookup_parent_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          full_name: string
+          parent_id: string
+        }[]
+      }
       lookup_school_by_code: {
         Args: { _school_code: string }
         Returns: {
           id: string
           school_name: string
+        }[]
+      }
+      lookup_student_by_code: {
+        Args: { p_query: string }
+        Returns: {
+          class_year: string
+          full_name: string
+          parent_id: string
+          student_id: string
+          unique_id: string
+          user_id: string
+          username: string
         }[]
       }
       reconcile_student_points_ledger: { Args: never; Returns: Json }
@@ -1973,6 +2001,16 @@ export type Database = {
           p_duplicate_ids: string[]
         }
         Returns: Json
+      }
+      search_duel_opponents: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: {
+          class_year: string
+          full_name: string
+          id: string
+          school_name: string
+          username: string
+        }[]
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

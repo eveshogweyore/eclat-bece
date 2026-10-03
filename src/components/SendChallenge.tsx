@@ -58,8 +58,7 @@ export function SendChallenge({ onBack, onNext, config }: SendChallengeProps) {
 
       if (studentData?.class_year) {
         setUserGrade(studentData.class_year);
-        await fetchSchools(studentData.class_year);
-        await fetchStudents(studentData.class_year);
+        await fetchOpponents(studentData.class_year);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -68,87 +67,34 @@ export function SendChallenge({ onBack, onNext, config }: SendChallengeProps) {
     }
   };
 
-  // School names live in `schools.school_name`; students link to a school's
-  // auth user via `students.school_id`, so resolve names through that join.
-  const fetchSchools = async (grade: "year_6" | "year_9") => {
+  // Opponent discovery runs through a scoped SECURITY DEFINER RPC: same grade
+  // as the caller, names + school names resolved server-side. The old
+  // client-side join never returned results (profiles.id vs students.id
+  // mismatch) and depended on platform-wide table reads.
+  const fetchOpponents = async (grade: "year_6" | "year_9") => {
     try {
-      const { data: schoolLinks } = await supabase
-        .from('students')
-        .select('school_id')
-        .eq('class_year', grade)
-        .not('school_id', 'is', null);
+      const { data: rows, error } = await supabase.rpc("search_duel_opponents", {
+        p_query: null,
+        p_limit: 200,
+      });
+      if (error) throw error;
 
-      const schoolIds = [...new Set((schoolLinks || []).map((s) => s.school_id).filter(Boolean))] as string[];
-      if (schoolIds.length === 0) {
-        setSchools([]);
-        return;
-      }
+      const list: Student[] = (rows || []).map((row) => ({
+        id: row.id,
+        name: row.full_name || row.username || 'Unknown',
+        username: row.username || '',
+        school: row.school_name || 'Unknown',
+        grade: row.class_year || grade,
+      }));
+      setStudents(list);
 
-      const { data: schoolsData } = await supabase
-        .from('schools')
-        .select('user_id, school_name')
-        .in('user_id', schoolIds);
-
-      const names = (schoolsData || [])
-        .map((s) => s.school_name)
-        .filter((name): name is string => !!name);
-      const uniqueSchools = [...new Set(names)];
-
-      setSchools(uniqueSchools);
-      if (uniqueSchools.length > 0) {
-        setSelectedSchool(uniqueSchools[0]);
+      const schoolNames = [...new Set(list.map((s) => s.school))];
+      setSchools(schoolNames);
+      if (schoolNames.length > 0) {
+        setSelectedSchool(schoolNames[0]);
       }
     } catch (error) {
-      console.error('Error fetching schools:', error);
-    }
-  };
-
-  const fetchStudents = async (grade: "year_6" | "year_9") => {
-    try {
-      const { data: studentsData } = await supabase
-        .from('students')
-        .select('id, school_id')
-        .eq('class_year', grade)
-        .neq('user_id', user?.id);
-
-      if (!studentsData) return;
-
-      const { data: schoolsData } = await supabase
-        .from('schools')
-        .select('user_id, school_name');
-      const schoolNames = new Map(
-        (schoolsData || []).map((s) => [s.user_id, s.school_name] as const)
-      );
-
-      const studentIds = studentsData.map((s) => s.id);
-      if (studentIds.length === 0) {
-        setStudents([]);
-        return;
-      }
-
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, full_name, username')
-        .in('id', studentIds);
-
-      if (profilesData) {
-        const studentsList: Student[] = profilesData.map((profile) => {
-          const studentInfo = studentsData.find((s) => s.id === profile.id);
-          const schoolName = studentInfo?.school_id
-            ? schoolNames.get(studentInfo.school_id)
-            : null;
-          return {
-            id: profile.id,
-            name: profile.full_name || profile.username || 'Unknown',
-            username: profile.username || '',
-            school: schoolName || 'Unknown',
-            grade: grade
-          };
-        });
-        setStudents(studentsList);
-      }
-    } catch (error) {
-      console.error('Error fetching students:', error);
+      console.error('Error fetching opponents:', error);
     }
   };
 

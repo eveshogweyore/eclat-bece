@@ -119,39 +119,29 @@ export function AddChildDialog({ open, onOpenChange, parentId, onSuccess }: AddC
         setLinkRequestSent(false);
 
         try {
-            // Find profile by unique_id or username
-            const { data: profiles, error: profileError } = await supabase
-                .from("profiles")
-                .select("id, full_name, unique_id, username")
-                .or(`unique_id.ilike.${query},username.ilike.${query}`)
-                .limit(1);
+            // Resolve the student through a scoped SECURITY DEFINER RPC —
+            // profiles are no longer readable across accounts.
+            const { data: match, error: lookupError } = await supabase
+                .rpc("lookup_student_by_code", { p_query: query })
+                .maybeSingle();
 
-            if (profileError) throw profileError;
+            if (lookupError) throw lookupError;
 
-            if (!profiles || profiles.length === 0) {
+            if (!match) {
                 toast.error("No student found with that ID or username.");
                 return;
             }
 
-            const targetProfile = profiles[0];
-
-            // Verify they have a student record
-            const { data: studentRecord, error: studentError } = await supabase
-                .from("students")
-                .select("id, user_id, class_year, parent_id")
-                .eq("user_id", targetProfile.id)
-                .maybeSingle();
-
-            if (studentError) throw studentError;
-
-            if (!studentRecord) {
-                toast.error("This user account is not registered as a student.");
-                return;
-            }
-
             setFoundStudent({
-                ...studentRecord,
-                profile: targetProfile,
+                id: match.student_id,
+                user_id: match.user_id,
+                class_year: match.class_year,
+                parent_id: match.parent_id,
+                profile: {
+                    full_name: match.full_name,
+                    unique_id: match.unique_id,
+                    username: match.username,
+                },
             });
         } catch (err: unknown) {
             console.error("Error searching student:", err);

@@ -80,8 +80,6 @@ export default function StudentDashboardOverview() {
       const sid = studentId as string;
       const todayUTC = new Date().toISOString().split("T")[0];
       const todayStart = `${todayUTC}T00:00:00.000Z`;
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
       const [
         gameProfileRes,
@@ -90,8 +88,7 @@ export default function StudentDashboardOverview() {
         pendingRes,
         recentRes,
         allResultsRes,
-        monthlyScoreRes,
-        monthlyCorrectRes,
+        platformRankRes,
       ] = await Promise.all([
         supabase.from("student_gamification_profile").select("*").eq("student_id", sid).maybeSingle(),
         supabase.from("student_badges").select("badge_id").eq("student_id", sid),
@@ -114,8 +111,9 @@ export default function StudentDashboardOverview() {
           .order("completed_at", { ascending: false })
           .limit(3),
         supabase.from("quiz_results").select("total_questions, score").eq("student_id", sid),
-        supabase.from("quiz_results").select("student_id, score").gte("completed_at", firstDayOfMonth),
-        supabase.from("quiz_results").select("student_id, correct_answers").gte("completed_at", firstDayOfMonth),
+        // Platform-wide rank metrics come from a scoped SECURITY DEFINER RPC;
+        // quiz_results are no longer readable across students.
+        supabase.rpc("get_platform_student_rank"),
       ]);
 
       const gameProfile = gameProfileRes.data;
@@ -178,6 +176,7 @@ export default function StudentDashboardOverview() {
       const recentActivity = recentRes.data ?? [];
 
       const allResults = allResultsRes.data ?? [];
+      const platformRank = platformRankRes.data?.[0] ?? null;
       const completedQuizzesCount = allResults.length;
       let totalQuestions = 0;
       let averageScore = 0;
@@ -196,25 +195,10 @@ export default function StudentDashboardOverview() {
         const streakBadge = currentStreak >= 5;
         const perfectScore = allResults.some((q) => q.score === 100);
 
-        // To determine Top 10%
-        const monthlyResults = monthlyScoreRes.data ?? [];
+        // To determine Top 10% (platform rank served by a scoped RPC)
         let top10Badge = false;
-        if (monthlyResults.length > 0) {
-          const studentScores = new Map<string, number[]>();
-          monthlyResults.forEach((r) => {
-            if (!studentScores.has(r.student_id)) {
-              studentScores.set(r.student_id, []);
-            }
-            studentScores.get(r.student_id)!.push(r.score);
-          });
-          const studentAverages = Array.from(studentScores.entries()).map(([id, scores]) => ({
-            id,
-            avg: scores.reduce((sum, score) => sum + score, 0) / scores.length,
-          }));
-          studentAverages.sort((a, b) => b.avg - a.avg);
-          const rank = studentAverages.findIndex((s) => s.id === sid) + 1;
-          const totalStudents = studentAverages.length;
-          top10Badge = rank > 0 && (rank / totalStudents <= 0.1 || rank <= 3);
+        if (platformRank && platformRank.score_rank != null && (platformRank.score_total ?? 0) > 0) {
+          top10Badge = platformRank.score_rank <= 3 || platformRank.score_rank / platformRank.score_total <= 0.1;
         } else {
           top10Badge = averageScore >= 85;
         }
@@ -228,44 +212,11 @@ export default function StudentDashboardOverview() {
         ];
       }
 
-      // Monthly rank (by total points, matching the National Leaderboard)
+      // Monthly rank (by total points, matching the National Leaderboard),
+      // served by the same scoped RPC.
       let monthlyRank: number | null = null;
-      const monthlyCorrect = monthlyCorrectRes.data ?? [];
-      if (monthlyCorrect.length > 0) {
-        const { data: allStudents } = await supabase.from("students").select("id, user_id");
-        const { data: allProfiles } = await supabase.from("profiles").select("id, full_name, username");
-
-        if (allStudents && allProfiles) {
-          const profileMap = new Map(allProfiles.map((p) => [p.id, p]));
-          const studentPointsMap = new Map<string, number>();
-          const studentNamesMap = new Map<string, string>();
-
-          allStudents.forEach((s) => {
-            studentPointsMap.set(s.id, 0);
-            const p = profileMap.get(s.user_id);
-            const name = p?.full_name || p?.username || "Unknown Student";
-            studentNamesMap.set(s.id, name);
-          });
-
-          monthlyCorrect.forEach((result) => {
-            const currentPoints = studentPointsMap.get(result.student_id) || 0;
-            studentPointsMap.set(result.student_id, currentPoints + result.correct_answers * 100);
-          });
-
-          const rankings = Array.from(studentPointsMap.entries()).map(([sidKey, points]) => ({
-            studentId: sidKey,
-            points,
-            name: studentNamesMap.get(sidKey) || "",
-          }));
-
-          rankings.sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            return a.name.localeCompare(b.name);
-          });
-
-          const rank = rankings.findIndex((s) => s.studentId === sid) + 1;
-          if (rank > 0) monthlyRank = rank;
-        }
+      if (platformRank && platformRank.points_rank != null && (platformRank.points_total ?? 0) > 0) {
+        monthlyRank = platformRank.points_rank;
       }
 
       return {

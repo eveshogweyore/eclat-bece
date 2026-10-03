@@ -205,31 +205,13 @@ export default function StudentProgressPage() {
         const perfectScore = quizResults.some(q => q.score === 100);
         const hasRecentQuiz = quizResults.some(q => new Date(q.completed_at) >= oneWeekAgo);
 
-        // To determine Top 10%
-        const now = new Date();
-        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const { data: monthlyResults } = await supabase
-          .from("quiz_results")
-          .select("student_id, score")
-          .gte("completed_at", firstDayOfMonth);
+        // To determine Top 10% (platform rank served by a scoped RPC)
+        const { data: rankRows } = await supabase.rpc("get_platform_student_rank");
+        const rankRow = rankRows?.[0] ?? null;
 
         let top10Badge = false;
-        if (monthlyResults && monthlyResults.length > 0) {
-          const studentScores = new Map<string, number[]>();
-          monthlyResults.forEach(r => {
-            if (!studentScores.has(r.student_id)) {
-              studentScores.set(r.student_id, []);
-            }
-            studentScores.get(r.student_id)!.push(r.score);
-          });
-          const studentAverages = Array.from(studentScores.entries()).map(([id, scores]) => ({
-            id,
-            avg: scores.reduce((sum, score) => sum + score, 0) / scores.length
-          }));
-          studentAverages.sort((a, b) => b.avg - a.avg);
-          const rank = studentAverages.findIndex(s => s.id === studentId) + 1;
-          const totalStudents = studentAverages.length;
-          top10Badge = rank > 0 && (rank / totalStudents <= 0.1 || rank <= 3);
+        if (rankRow && rankRow.score_rank != null && (rankRow.score_total ?? 0) > 0) {
+          top10Badge = rankRow.score_rank <= 3 || rankRow.score_rank / rankRow.score_total <= 0.1;
         } else {
           top10Badge = avgScore >= 85;
         }
