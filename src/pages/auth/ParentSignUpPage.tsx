@@ -58,6 +58,14 @@ export default function ParentSignUpPage() {
         return;
       }
 
+      // With Supabase's "Confirm email" toggle off, signUp returns an active
+      // session. The intended flow is "verify the emailed code, then sign in",
+      // so drop the session now — otherwise the login page would immediately
+      // bounce the unverified user back to the dashboard.
+      if (data.session) {
+        await supabase.auth.signOut();
+      }
+
       const { error: emailError } = await supabase.functions.invoke("send-verification-email", {
         body: { user_id: data.user.id },
       });
@@ -88,11 +96,9 @@ export default function ParentSignUpPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+          // Carry the role in the URL so the callback does not depend on
+          // localStorage surviving the redirect.
+          redirectTo: `${window.location.origin}/auth/callback?role=parent`,
         },
       });
 
