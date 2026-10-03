@@ -151,21 +151,30 @@ export default function AuthPage({ roleOverride }: { roleOverride?: AuthRole }) 
       setIsLoading(true);
       localStorage.setItem("pendingRole", role);
 
+      // The Google redirect never sees this page's form, so the school name
+      // must be captured (and is required) before leaving — otherwise the
+      // provisioned school row gets no name.
       if (role === "school") {
         const schoolInput = document.getElementById("signup-school-name") as HTMLInputElement | null;
-        if (schoolInput?.value?.trim()) {
-          localStorage.setItem("pendingSchoolName", schoolInput.value.trim());
+        const schoolName = schoolInput?.value?.trim() || "";
+        if (!schoolName) {
+          toast({
+            title: "School name required",
+            description: "Enter your school's name above before continuing with Gmail.",
+            variant: "destructive",
+          });
+          schoolInput?.focus();
+          return;
         }
+        localStorage.setItem("pendingSchoolName", schoolName);
       }
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+          // Carry the role in the URL so the callback does not depend on
+          // localStorage surviving the redirect.
+          redirectTo: `${window.location.origin}/auth/callback?role=${role}`,
         },
       });
 
@@ -287,7 +296,7 @@ export default function AuthPage({ roleOverride }: { roleOverride?: AuthRole }) 
                         type="text"
                         placeholder="Lagos International School"
                         required
-                        maxLength={200}
+                        maxLength={150}
                         className="h-9 border-slate-300 bg-slate-50 pl-10 text-[12px] text-slate-900 placeholder:text-slate-400 focus-visible:ring-sky-500 dark:border-[#2d3c55] dark:bg-[#111b30] dark:text-[#dce7ff] dark:placeholder:text-[#6f7b91] dark:focus-visible:ring-[#72c8f6]"
                       />
                     </div>
