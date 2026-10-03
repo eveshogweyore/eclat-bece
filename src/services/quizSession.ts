@@ -104,13 +104,13 @@ export async function completeQuizSession(
 
 export async function submitDuelTurnServer(
   challengeId: string,
-  score: number,
-  timeTakenSeconds: number
+  sessionId: string
 ): Promise<{ status: string; resolved: boolean; outcome?: string; winner_id?: string | null; ep_awarded?: number }> {
+  // Server-authoritative: score and duration are derived from the completed
+  // session's recorded answers — only the ids travel from the client.
   const { data, error } = await supabase.rpc("submit_duel_turn", {
     p_challenge_id: challengeId,
-    p_score: score,
-    p_time_taken_seconds: timeTakenSeconds,
+    p_session_id: sessionId,
   });
   if (error) {
     throw error;

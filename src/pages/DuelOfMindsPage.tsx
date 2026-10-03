@@ -128,13 +128,33 @@ export default function DuelOfMindsPage() {
           ? "quiz_questions_year6"
           : "quiz_questions_year9";
 
-      let query = supabase.from(tableName).select("id").limit(config.numberOfQuestions * 2);
-      if (config.subject) {
-        query = query.eq("subject", config.subject);
+      // Pull from the real question bank, filtered by the selected subject AND
+      // topics — the confirmation screen promises topic-filtered questions.
+      let query = supabase.from(tableName).select("id").eq("subject", config.subject);
+      if (config.topics.length > 0) {
+        query = query.in("topic", config.topics);
       }
-      const { data: qData } = await query;
+      const { data: qData, error: qError } = await query.limit(config.numberOfQuestions * 3);
+      if (qError) throw qError;
+
       const allIds = (qData || []).map((q: any) => q.id);
-      const pickedIds = allIds.sort(() => 0.5 - Math.random()).slice(0, config.numberOfQuestions);
+      if (allIds.length === 0) {
+        throw new Error(
+          `No questions are available for ${config.subject}${config.topics.length > 0 ? " in the selected topics" : ""} yet. Try different topics.`
+        );
+      }
+
+      // Fisher-Yates: unbiased shuffle before slicing.
+      const pool = [...allIds];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      const pickedIds = pool.slice(0, Math.min(config.numberOfQuestions, pool.length));
+
+      if (pickedIds.length < config.numberOfQuestions) {
+        toast.info(`Only ${pickedIds.length} question(s) available for this selection — the duel will use all of them.`);
+      }
 
       const maxTimeSeconds =
         config.maxTimeUnit === "min" ? config.maxTime * 60 : config.maxTime;
@@ -162,8 +182,10 @@ export default function DuelOfMindsPage() {
   };
 
   const handleAcceptDuel = async (challenge: ArenaChallenge) => {
+    if (!currentStudentId) return;
     try {
-      await updateChallengeStatus(challenge.id, "accepted");
+      const ok = await updateChallengeStatus(challenge.id, currentStudentId, "accepted");
+      if (!ok) throw new Error("Could not accept the challenge");
       toast.success("Challenge accepted! Entering battle arena...");
       navigate(`/quiz?mode=duel&duelId=${challenge.id}`);
     } catch (err) {
@@ -172,8 +194,10 @@ export default function DuelOfMindsPage() {
   };
 
   const handleDeclineDuel = async (challenge: ArenaChallenge) => {
+    if (!currentStudentId) return;
     try {
-      await updateChallengeStatus(challenge.id, "declined");
+      const ok = await updateChallengeStatus(challenge.id, currentStudentId, "declined");
+      if (!ok) throw new Error("Could not decline the challenge");
       toast.info("Challenge declined");
       loadHubData();
     } catch (err) {

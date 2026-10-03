@@ -2025,14 +2025,19 @@ export type Database = {
         }
         Returns: Json
       }
-      submit_duel_turn: {
-        Args: {
-          p_challenge_id: string
-          p_score: number
-          p_time_taken_seconds: number
-        }
-        Returns: Json
-      }
+      submit_duel_turn:
+        | {
+            Args: {
+              p_challenge_id: string
+              p_score: number
+              p_time_taken_seconds: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: { p_challenge_id: string; p_session_id: string }
+            Returns: Json
+          }
       submit_quiz_answer: {
         Args: {
           p_question_id: string

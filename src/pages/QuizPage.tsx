@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+﻿import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -168,8 +168,14 @@ export default function QuizPage() {
       const todayUTC = new Date().toISOString().split("T")[0];
       return `eclat_daily_challenge_${user.id}_${todayUTC}`;
     }
+    if (isDuel && duelId) {
+      // Duels must never share a cache key with each other or with mixed
+      // practice â€” a shared key could restore one duel's session and submit
+      // its answers to another duel.
+      return `eclat_quiz_cache_${user.id}_duel_${duelId}`;
+    }
     return `eclat_quiz_cache_${user.id}_${assignmentId || subject || "mixed"}_${topic || "all"}`;
-  }, [user, assignmentId, subject, topic, isDailyChallenge]);
+  }, [user, assignmentId, subject, topic, isDailyChallenge, isDuel, duelId]);
 
   const clearSessionCache = useCallback(() => {
     const key = getSessionCacheKey();
@@ -228,7 +234,7 @@ export default function QuizPage() {
 
       if (error) throw error;
 
-      toast.success("Thank you! Question has been flagged for admin review. 🎉");
+      toast.success("Thank you! Question has been flagged for admin review. ðŸŽ‰");
       setFlaggedQuestionIds((prev) => [...prev, targetQ.id]);
       setFlagDialogOpen(false);
       setFlagReason("");
@@ -460,7 +466,7 @@ export default function QuizPage() {
             ? "comprehension_passages_year6"
             : "comprehension_passages_year9";
 
-        // IDs only — correct answers must never reach the browser.
+        // IDs only â€” correct answers must never reach the browser.
         let idQuery = supabase.from(tableName).select("id");
 
         if (duelQuestionIds.length > 0) {
@@ -608,7 +614,7 @@ export default function QuizPage() {
         setLoading(false);
       }
     },
-    [user, subject, topic, assignmentId, navigate, isReviewMode, getSessionCacheKey]
+    [user, subject, topic, assignmentId, navigate, isReviewMode, isDailyChallenge, isDuel, duelId, getSessionCacheKey, clearSessionCache]
   );
 
   useEffect(() => {
@@ -636,8 +642,8 @@ export default function QuizPage() {
 
   const handleTimeExpired = async () => {
     const state = latestQuizState.current;
-    let finalAnswers = [...state.answers];
-    let finalResponses = [...state.userResponses];
+    const finalAnswers = [...state.answers];
+    const finalResponses = [...state.userResponses];
     let finalScore = state.score;
 
     // If student selected an answer on the current question but hasn't submitted yet:
@@ -743,15 +749,14 @@ export default function QuizPage() {
 
     const finalAnswers = overrideAnswers || answers;
     const finalResponses = overrideResponses || userResponses;
-    const finalScore = overrideScore !== undefined ? overrideScore : finalAnswers.filter(Boolean).length;
-    const percentage = questions.length > 0 ? Math.round((finalScore / questions.length) * 100) : 0;
+    const finalScore = overrideScore !== undefined ? overrideScore : finalAnswers.filter(Boolean).length;    const percentage = questions.length > 0 ? Math.round((finalScore / questions.length) * 100) : 0;
 
     try {
       // Server-authoritative completion: the edge function grades the recorded
       // answers, writes quiz_results, runs the EP/mastery/streak/badge
       // pipeline and updates the league cohort. The client no longer computes
       // or writes any gamification data.
-      let answerKey: Record<string, { is_correct: boolean; correct_index: number | null }> = {};
+      const answerKey: Record<string, { is_correct: boolean; correct_index: number | null }> = {};
       try {
         const outcome = await completeQuizSession(quizSessionId);
         for (const entry of outcome.questionAnswerKey ?? []) {
@@ -786,14 +791,13 @@ export default function QuizPage() {
         toast.error("Your session was saved but scoring failed. Please contact support if points are missing.");
       }
 
-      // If Head-to-Head Duel, submit turn to the arena (server-resolved)
-      if (duelId) {
+      // If Head-to-Head Duel, submit turn to the arena (server-resolved from
+      // this session's recorded answers)
+      if (duelId && quizSessionId) {
         try {
-          const timeTaken = assignmentDuration ? Math.max(5, assignmentDuration * 60 - (timeLeft || 0)) : 45;
           const res = await submitDuelTurn({
             challengeId: duelId,
-            score: finalScore,
-            timeTakenSeconds: timeTaken,
+            sessionId: quizSessionId,
           });
           setDuelOutcome(res);
         } catch (dErr) {
@@ -836,7 +840,7 @@ export default function QuizPage() {
       }
 
       clearSessionCache();
-      toast.success("Quiz results saved! 🎉");
+      toast.success("Quiz results saved! ðŸŽ‰");
     } catch (error) {
       console.error("Error:", error);
     }
@@ -990,7 +994,7 @@ export default function QuizPage() {
               }`}
             />
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-1">
-              Quiz Complete! 🎉
+              Quiz Complete! ðŸŽ‰
             </h1>
             <p className="text-sm text-muted-foreground">
               Here is how you performed on this practice set
@@ -1009,7 +1013,7 @@ export default function QuizPage() {
                 variant={isPassed ? "default" : "secondary"}
                 className="text-sm sm:text-base font-semibold px-4 py-1 rounded-full shadow-sm"
               >
-                {isPassed ? "Passed! ✨" : "Keep Practicing"}
+                {isPassed ? "Passed! âœ¨" : "Keep Practicing"}
               </Badge>
               {assignmentDuration && (
                 <Badge
@@ -1034,11 +1038,11 @@ export default function QuizPage() {
                   <h3 className="text-base font-black text-white">
                     {duelOutcome.isMatchComplete && duelOutcome.matchResult
                       ? duelOutcome.matchResult.outcome === "win"
-                        ? "Arena Victory! 🏆"
+                        ? "Arena Victory! ðŸ†"
                         : duelOutcome.matchResult.outcome === "draw"
-                        ? "Arena Battle Tie! 🤝"
-                        : "Arena Battle Concluded 🛡️"
-                      : "Duel Round Recorded! ⚡"}
+                        ? "Arena Battle Tie! ðŸ¤"
+                        : "Arena Battle Concluded ðŸ›¡ï¸"
+                      : "Duel Round Recorded! âš¡"}
                   </h3>
                   <p className="text-xs text-slate-300">
                     {duelOutcome.isMatchComplete && duelOutcome.matchResult
@@ -1055,13 +1059,13 @@ export default function QuizPage() {
                   onClick={() => navigate("/dashboard/student/duel-of-minds")}
                   className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs h-8"
                 >
-                  Return to Arena Hub →
+                  Return to Arena Hub â†’
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Éclat Gamification Points Ledger */}
+          {/* Ã‰clat Gamification Points Ledger */}
           {gamificationOutcome && (
             <div className="mb-6">
               <PointBreakdownLedger outcome={gamificationOutcome} />
@@ -1124,7 +1128,7 @@ export default function QuizPage() {
               <div className="rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-slate-900 to-amber-500/5 p-4 text-left">
                 <div className="flex items-center gap-2 mb-1.5">
                   <Flame className="h-5 w-5 text-amber-400" />
-                  <span className="text-sm font-bold text-amber-300">Daily Challenge Completed • Single Attempt Locked</span>
+                  <span className="text-sm font-bold text-amber-300">Daily Challenge Completed â€¢ Single Attempt Locked</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   Congratulations on finishing today&apos;s sprint! Daily challenges can only be attempted once per calendar day to maintain fair competitive standards and league rankings.
@@ -1151,7 +1155,7 @@ export default function QuizPage() {
                 <Button
                   onClick={() => {
                     clearSessionCache();
-                    navigate("/dashboard/student/arena");
+                    navigate("/dashboard/student/duel-of-minds");
                   }}
                   variant="outline"
                   className="w-full gap-2 font-bold h-11 border-purple-500/40 text-purple-300 hover:bg-purple-950/30"
@@ -1455,7 +1459,7 @@ export default function QuizPage() {
                 <div>
                   <p className="font-semibold mb-1">
                     {selectedAnswer === question.correctAnswer
-                      ? "Correct! 🎉"
+                      ? "Correct! ðŸŽ‰"
                       : "Incorrect"}
                   </p>
                   <p className="text-sm text-foreground/80">{question.explanation}</p>
@@ -1474,7 +1478,7 @@ export default function QuizPage() {
               >
                 {grading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking…
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checkingâ€¦
                   </>
                 ) : (
                   "Submit Answer"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Minus, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ChallengeConfig {
   challengeName: string;
@@ -17,15 +19,18 @@ interface ChallengeConfig {
   maxTimeUnit: 'min' | 'sec';
 }
 
-const topicsBySubject: Record<string, string[]> = {
-  'Mathematics': ['Algebra', 'Geometry', 'Trigonometry', 'Calculus', 'Statistics', 'Number theory'],
-  'Physics': ['Mechanics', 'Electricity', 'Waves', 'Thermodynamics', 'Optics', 'Modern physics'],
-  'Chemistry': ['Atomic structure', 'Bonding', 'Organic chemistry', 'Acids and bases', 'Stoichiometry', 'Thermochemistry'],
-  'Biology': ['Cell biology', 'Genetics', 'Ecology', 'Human physiology', 'Evolution', 'Microbiology'],
-  'Computer science': ['Algorithms', 'Data structures', 'Databases', 'Networking', 'Operating systems', 'Programming logic'],
-  'English': ['Grammar', 'Comprehension', 'Vocabulary', 'Essay writing', 'Literature'],
-  'General knowledge': ['Current affairs', 'History', 'Geography', 'Science trivia', 'Sports', 'Arts and culture']
-};
+export type { ChallengeConfig };
+
+interface SubjectOption {
+  name: string;
+  icon: string | null;
+}
+
+interface TopicOption {
+  subject: string;
+  topic: string;
+  questions: number;
+}
 
 interface ChallengeSettingsProps {
   onNext: (config: ChallengeConfig) => void;
@@ -33,6 +38,7 @@ interface ChallengeSettingsProps {
 
 export function ChallengeSettings({ onNext }: ChallengeSettingsProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [challengeName, setChallengeName] = useState('');
   const [subject, setSubject] = useState('');
   const [numberOfQuestions, setNumberOfQuestions] = useState(10);
@@ -40,8 +46,62 @@ export function ChallengeSettings({ onNext }: ChallengeSettingsProps) {
   const [maxTime, setMaxTime] = useState(20);
   const [maxTimeUnit, setMaxTimeUnit] = useState<'min' | 'sec'>('min');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [classYear, setClassYear] = useState<'year_6' | 'year_9' | null>(null);
+  const [cohortSubjects, setCohortSubjects] = useState<SubjectOption[]>([]);
+  const [topicOptions, setTopicOptions] = useState<TopicOption[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
 
-  const availableTopics = subject ? topicsBySubject[subject] || [] : [];
+  // Real subjects/topics for the student's cohort — the same sources as the
+  // Practice zone, so every duel can actually be played.
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadOptions = async () => {
+      if (!user) return;
+      try {
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('class_year')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (!studentData?.class_year || cancelled) return;
+
+        const year = studentData.class_year as 'year_6' | 'year_9';
+        const viewName = year === 'year_6'
+          ? 'topic_question_counts_year6'
+          : 'topic_question_counts_year9';
+
+        const [subjectsRes, topicsRes] = await Promise.all([
+          supabase
+            .from('subjects')
+            .select('name, icon')
+            .eq(year === 'year_6' ? 'available_year_6' : 'available_year_9', true)
+            .eq('is_active', true)
+            .order('display_order', { ascending: true })
+            .order('name', { ascending: true }),
+          supabase.from(viewName as never).select('subject, topic, questions_count'),
+        ]);
+
+        if (cancelled) return;
+
+        setClassYear(year);
+        setCohortSubjects((subjectsRes.data as SubjectOption[]) || []);
+        setTopicOptions((topicsRes.data as unknown as TopicOption[]) || []);
+      } finally {
+        if (!cancelled) setIsLoadingOptions(false);
+      }
+    };
+
+    loadOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const availableTopics = topicOptions
+    .filter((t) => t.subject === subject)
+    .map((t) => t.topic);
 
   const toggleTopic = (topic: string) => {
     if (topics.includes(topic)) {
@@ -53,7 +113,7 @@ export function ChallengeSettings({ onNext }: ChallengeSettingsProps) {
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!challengeName.trim()) {
       newErrors.challengeName = 'Enter a challenge name';
     }
@@ -117,18 +177,20 @@ export function ChallengeSettings({ onNext }: ChallengeSettingsProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="subject">Subject</Label>
-                <Select value={subject} onValueChange={(value) => { setSubject(value); setTopics([]); }}>
+                <Select
+                  value={subject}
+                  onValueChange={(value) => { setSubject(value); setTopics([]); }}
+                  disabled={isLoadingOptions}
+                >
                   <SelectTrigger id="subject">
-                    <SelectValue placeholder="Select subject" />
+                    <SelectValue placeholder={isLoadingOptions ? "Loading…" : "Select subject"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mathematics">Mathematics</SelectItem>
-                    <SelectItem value="Physics">Physics</SelectItem>
-                    <SelectItem value="Chemistry">Chemistry</SelectItem>
-                    <SelectItem value="Biology">Biology</SelectItem>
-                    <SelectItem value="Computer science">Computer science</SelectItem>
-                    <SelectItem value="English">English</SelectItem>
-                    <SelectItem value="General knowledge">General knowledge</SelectItem>
+                    {cohortSubjects.map((sub) => (
+                      <SelectItem key={sub.name} value={sub.name}>
+                        {sub.icon ? `${sub.icon} ` : ''}{sub.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {errors.subject && <p className="text-sm text-destructive">{errors.subject}</p>}
@@ -149,7 +211,7 @@ export function ChallengeSettings({ onNext }: ChallengeSettingsProps) {
                     id="numberOfQuestions"
                     type="number"
                     value={numberOfQuestions}
-                    onChange={(e) => setNumberOfQuestions(Math.max(1, parseInt(e.target.value) || 1))}
+                    onChange={(e) => setNumberOfQuestions(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
                     className="mx-2 text-center"
                     min={1}
                     max={100}
@@ -237,7 +299,7 @@ export function ChallengeSettings({ onNext }: ChallengeSettingsProps) {
               >
                 Back
               </Button>
-              <Button type="submit" className="flex-2 flex-[2]">
+              <Button type="submit" className="flex-[2]">
                 Continue
               </Button>
             </div>
