@@ -85,11 +85,13 @@ serve(async (req) => {
                 throw new Error(`Failed to create auth user: ${userError?.message}`)
             }
 
-            // Upsert Profile
+            // Upsert Profile (admins are provisioned confirmed; they have no
+            // email verification flow)
             await supabaseAdmin.from('profiles').upsert({
                 id: newUser.user.id,
                 email: payload.email,
-                full_name: payload.fullName
+                full_name: payload.fullName,
+                email_verified: true
             }, { onConflict: 'id' })
 
             // Add admin role
@@ -201,13 +203,14 @@ serve(async (req) => {
 
         console.log('Step 4: Creating/updating profile...')
 
-        // 4. Create or update profile
+        // 4. Create or update profile (admins are provisioned confirmed)
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
             .upsert({
                 id: newUser.user.id,
                 email: invitation.target_email,
-                full_name: invitation.full_name
+                full_name: invitation.full_name,
+                email_verified: true
             }, {
                 onConflict: 'id'
             })

@@ -102,14 +102,24 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
         return;
       }
 
-      // Check if email is verified
-      if (!session.user.email_confirmed_at) {
+      // Email verification is enforced app-side via the Resend code flow: the
+      // profile flag starts false at signup and is flipped by verify-email-code,
+      // the OAuth callback, or the provisioning functions. The auth-level
+      // email_confirmed_at can no longer gate this — with the built-in
+      // confirmation email disabled it is set at signup.
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("email_verified")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (profileData?.email_verified === false) {
         const verifyParams = new URLSearchParams({
           email: session.user.email || '',
           user_id: session.user.id,
           ...(requiredRole ? { role: requiredRole } : {}),
         });
-          navigateRef.current(`/verify-email?${verifyParams.toString()}`);
+        navigateRef.current(`/verify-email?${verifyParams.toString()}`);
         return;
       }
 

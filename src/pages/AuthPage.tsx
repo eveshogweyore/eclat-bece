@@ -102,6 +102,14 @@ export default function AuthPage({ roleOverride }: { roleOverride?: AuthRole }) 
         return;
       }
 
+      // With Supabase's "Confirm email" toggle off, signUp returns an active
+      // session. The intended flow is "verify the emailed code, then sign in",
+      // so drop the session now — otherwise the login page would immediately
+      // bounce the unverified user back to the dashboard.
+      if (data.session) {
+        await supabase.auth.signOut();
+      }
+
       if (data.user.identities && data.user.identities.length === 0) {
         toast({
           title: "Account Already Exists",
