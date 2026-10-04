@@ -52,6 +52,10 @@ export function SchoolEditTeacherDialog({
   const [status, setStatus] = useState<"Active" | "On Leave" | "Inactive">("Active");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isProvisioning, setIsProvisioning] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+
+  const teacherUserId = (teacher as { user_id?: string | null } | null)?.user_id ?? null;
 
   useEffect(() => {
     if (teacher) {
@@ -74,6 +78,50 @@ export function SchoolEditTeacherDialog({
   };
 
   const isVirtual = teacher.id.startsWith("virtual-");
+
+  const handleProvisionLogin = async () => {
+    if (isVirtual) {
+      toast.error("Save this teacher first, then create their login.");
+      return;
+    }
+    const loginEmail = email.trim().toLowerCase();
+    if (!loginEmail) {
+      toast.error("An email address is required to create a login.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsProvisioning(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const isReset = !!teacherUserId;
+      const { error } = await supabase.functions.invoke("create-teacher-account", {
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : undefined,
+        body: isReset
+          ? { action: "reset-password", teacher_id: teacher.id, new_password: newPassword }
+          : { teacher_id: teacher.id, email: loginEmail, password: newPassword },
+      });
+      if (error) {
+        const message = typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message?: unknown }).message)
+          : "Failed to provision teacher account";
+        throw new Error(message);
+      }
+      toast.success(isReset ? "Teacher password updated!" : "Login account created!");
+      setNewPassword("");
+      onSaved?.();
+    } catch (err: any) {
+      console.error("Error provisioning teacher login:", err);
+      toast.error(err.message || "Failed to provision teacher account");
+    } finally {
+      setIsProvisioning(false);
+    }
+  };
 
   const handleUpdate = async () => {
     if (!fullName.trim()) {
@@ -301,6 +349,50 @@ export function SchoolEditTeacherDialog({
               })}
             </div>
           </div>
+          {/* Teacher Login Access */}
+          {!isVirtual && (
+            <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-foreground">Teacher Portal Login</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {teacherUserId
+                      ? "This teacher has an active login account."
+                      : "No login yet — create one so this teacher can assign tasks."}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                    teacherUserId
+                      ? "bg-emerald-500/15 text-emerald-500"
+                      : "bg-amber-500/15 text-amber-500"
+                  }`}
+                >
+                  {teacherUserId ? "Active" : "No account"}
+                </span>
+              </div>
+              <div className="space-y-1.5 pt-1">
+                <Input
+                  type="text"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder={teacherUserId ? "New password (min 6 chars)" : "Temporary password (min 6 chars)"}
+                  className="border-[#34415b] bg-background text-white text-xs h-9"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isProvisioning || newPassword.length < 6}
+                  onClick={handleProvisionLogin}
+                  className="text-xs"
+                >
+                  {isProvisioning && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+                  {teacherUserId ? "Reset password" : "Create login"}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="border-t border-[#1f2b42] pt-3 flex items-center justify-between">

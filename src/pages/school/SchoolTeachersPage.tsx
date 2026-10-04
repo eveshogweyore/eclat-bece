@@ -8,6 +8,13 @@ import { SchoolAddTeacherDialog } from "@/components/school/SchoolAddTeacherDial
 import { SchoolEditTeacherDialog } from "@/components/school/SchoolEditTeacherDialog";
 import { useSchoolData, SchoolTeacherItem } from "@/hooks/useSchoolData";
 
+const teacherLoginTone = (teacher: unknown) => {
+  const linked = (teacher as { user_id?: string | null }).user_id;
+  return linked
+    ? "text-emerald-700 dark:text-emerald-300"
+    : "text-amber-700 dark:text-amber-300";
+};
+
 export function SchoolTeachersPage() {
   const { school, teachers, classes, refresh, isLoading, error } = useSchoolData();
   const [search, setSearch] = useState("");
@@ -143,6 +150,23 @@ export function SchoolTeachersPage() {
                     }`}
                   >
                     {teacher.status}
+                  </span>
+                </div>
+
+                {/* Login status */}
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full flex-shrink-0 ${
+                      (teacher as { user_id?: string | null }).user_id
+                        ? "bg-emerald-500"
+                        : "bg-amber-500"
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <span className={teacherLoginTone(teacher)}>
+                    {(teacher as { user_id?: string | null }).user_id
+                      ? "Login active"
+                      : "No portal account yet"}
                   </span>
                 </div>
 

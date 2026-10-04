@@ -49,6 +49,8 @@ export function SchoolAddTeacherDialog({
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [status, setStatus] = useState<"Active" | "On Leave" | "Inactive">("Active");
   const [isSaving, setIsSaving] = useState(false);
+  const [createLogin, setCreateLogin] = useState(true);
+  const [loginPassword, setLoginPassword] = useState("");
 
   const { subjects } = useSubjects({ onlyActive: true });
 
@@ -60,6 +62,8 @@ export function SchoolAddTeacherDialog({
     setPrimarySubject("");
     setSelectedClassIds([]);
     setStatus("Active");
+    setCreateLogin(true);
+    setLoginPassword("");
     setIsSaving(false);
   };
 
@@ -80,9 +84,21 @@ export function SchoolAddTeacherDialog({
       return;
     }
 
+    if (createLogin) {
+      const loginEmail = email.trim().toLowerCase();
+      if (!loginEmail) {
+        toast.error("A login email is required when creating a teacher account.");
+        return;
+      }
+      if (loginPassword.length < 6) {
+        toast.error("Login password must be at least 6 characters.");
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
-      const { error } = await supabase.from("school_teachers").insert({
+      const { data: teacherRow, error } = await supabase.from("school_teachers").insert({
         school_id: schoolId,
         full_name: fullName.trim(),
         email: email.trim() || null,
@@ -91,9 +107,35 @@ export function SchoolAddTeacherDialog({
         primary_subject: primarySubject.trim() || null,
         assigned_class_ids: selectedClassIds,
         status,
-      });
+      })
+      .select("id")
+      .single();
 
       if (error) throw error;
+
+      // Provision the login account (create-and-link) when requested.
+      if (createLogin && teacherRow?.id) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const { error: fnError } = await supabase.functions.invoke("create-teacher-account", {
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : undefined,
+          body: {
+            teacher_id: teacherRow.id,
+            email: email.trim().toLowerCase(),
+            password: loginPassword,
+          },
+        });
+        if (fnError) {
+          toast.warning(
+            "Teacher registered, but the login account could not be created. Use Edit → Create login to retry."
+          );
+        } else {
+          toast.success("Faculty member registered with login access!");
+        }
+      } else {
+        toast.success("Faculty member registered successfully!");
+      }
 
       // Optional sync: update assigned classes' lead_teacher if currently empty
       if (selectedClassIds.length > 0) {
@@ -108,7 +150,6 @@ export function SchoolAddTeacherDialog({
         }
       }
 
-      toast.success("Faculty member registered successfully!");
       onCreated?.();
       handleClose();
     } catch (err: any) {
@@ -247,6 +288,57 @@ export function SchoolAddTeacherDialog({
                     </label>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Login Access */}
+          <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-3">
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <div>
+                <p className="text-xs font-bold text-foreground">Create login account</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Lets this teacher sign in to the Teacher Portal and assign tasks to their classes.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={createLogin}
+                onChange={(e) => setCreateLogin(e.target.checked)}
+                className="h-4 w-4 rounded accent-primary cursor-pointer"
+              />
+            </label>
+            {createLogin && (
+              <div className="space-y-2 pt-1">
+                <div className="space-y-1.5">
+                  <Label htmlFor="login-email" className="text-xs text-muted-foreground font-semibold">
+                    Login Email *
+                  </Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="teacher@school.edu"
+                    className="border-[#34415b] bg-background text-white text-xs h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="login-password" className="text-xs text-muted-foreground font-semibold">
+                    Temporary Password *
+                  </Label>
+                  <Input
+                    id="login-password"
+                    type="text"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="At least 6 characters — share it with the teacher"
+                    className="border-[#34415b] bg-background text-white text-xs h-9"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Share these credentials with the teacher privately. They can change the password later.
+                  </p>
+                </div>
               </div>
             )}
           </div>
