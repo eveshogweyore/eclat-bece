@@ -33,6 +33,11 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/manage-student-account/index.ts"
 
+[functions.create-teacher-account]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/create-teacher-account/index.ts"
+
 [functions.delete-student-account]
 enabled = true
 verify_jwt = true
