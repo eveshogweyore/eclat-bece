@@ -140,115 +140,37 @@ const App = () => (
                 } />
                 <Route path="/dashboard/student" element={
                   <ProtectedRoute requiredRole="student">
-                    <StudentLayout>
-                      <StudentDashboardOverview />
-                    </StudentLayout>
+                    <StudentLayout />
                   </ProtectedRoute>
-                } />
+                }>
+                  <Route index element={<StudentDashboardOverview />} />
+                  <Route path="practice" element={<StudentPractice />} />
+                  <Route path="assignments" element={<StudentAssignments />} />
+                  <Route path="progress" element={<StudentProgressPage />} />
+                  <Route path="leaderboard" element={<StudentLeaderboardPage />} />
+                  <Route path="settings" element={<StudentSettingsPage />} />
+                  <Route path="duel-of-minds" element={<DuelOfMindsPage />} />
+                </Route>
                 <Route path="/dashboard/student/daily-challenge" element={
                   <ProtectedRoute requiredRole="student">
                     <Navigate to="/quiz?mode=daily_challenge" replace />
                   </ProtectedRoute>
                 } />
-                <Route path="/dashboard/student/practice" element={
-                  <ProtectedRoute requiredRole="student">
-                    <StudentLayout>
-                      <StudentPractice />
-                    </StudentLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/student/assignments" element={
-                  <ProtectedRoute requiredRole="student">
-                    <StudentLayout>
-                      <StudentAssignments />
-                    </StudentLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/student/progress" element={
-                  <ProtectedRoute requiredRole="student">
-                    <StudentLayout>
-                      <StudentProgressPage />
-                    </StudentLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/student/leaderboard" element={
-                  <ProtectedRoute requiredRole="student">
-                    <StudentLayout>
-                      <StudentLeaderboardPage />
-                    </StudentLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/student/settings" element={
-                  <ProtectedRoute requiredRole="student">
-                    <StudentLayout>
-                      <StudentSettingsPage />
-                    </StudentLayout>
-                  </ProtectedRoute>
-                } />
                 <Route path="/settings" element={<Navigate to="/dashboard/student/settings" replace />} />
-                <Route path="/dashboard/student/duel-of-minds" element={
-                  <ProtectedRoute requiredRole="student">
-                    <StudentLayout>
-                      <DuelOfMindsPage />
-                    </StudentLayout>
-                  </ProtectedRoute>
-                } />
                 <Route path="/dashboard/parent" element={
                   <ProtectedRoute requiredRole="parent">
-                    <ParentLayout>
-                      <ParentDashboard />
-                    </ParentLayout>
+                    <ParentLayout />
                   </ProtectedRoute>
-                } />
-                <Route path="/dashboard/parent/activities" element={
-                  <ProtectedRoute requiredRole="parent">
-                    <ParentLayout>
-                      <ActivityFeedPage />
-                    </ParentLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/parent/children" element={
-                  <ProtectedRoute requiredRole="parent">
-                    <ParentLayout>
-                      <MyChildren />
-                    </ParentLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/parent/assignments" element={
-                  <ProtectedRoute requiredRole="parent">
-                    <ParentLayout>
-                      <ParentAssignmentsPage />
-                    </ParentLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/parent/reports" element={
-                  <ProtectedRoute requiredRole="parent">
-                    <ParentLayout>
-                      <ParentReportsPage />
-                    </ParentLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/parent/subscriptions" element={
-                  <ProtectedRoute requiredRole="parent">
-                    <ParentLayout>
-                      <SubscriptionsPage />
-                    </ParentLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/parent/settings" element={
-                  <ProtectedRoute requiredRole="parent">
-                    <ParentLayout>
-                      <ParentSettingsPage />
-                    </ParentLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard/parent/resources" element={
-                  <ProtectedRoute requiredRole="parent">
-                    <ParentLayout>
-                      <ParentResourcesPage />
-                    </ParentLayout>
-                  </ProtectedRoute>
-                } />
+                }>
+                  <Route index element={<ParentDashboard />} />
+                  <Route path="activities" element={<ActivityFeedPage />} />
+                  <Route path="children" element={<MyChildren />} />
+                  <Route path="assignments" element={<ParentAssignmentsPage />} />
+                  <Route path="reports" element={<ParentReportsPage />} />
+                  <Route path="subscriptions" element={<SubscriptionsPage />} />
+                  <Route path="settings" element={<ParentSettingsPage />} />
+                  <Route path="resources" element={<ParentResourcesPage />} />
+                </Route>
                 <Route path="/dashboard/school" element={
                   <ProtectedRoute requiredRole="school">
                     <SchoolLayout />

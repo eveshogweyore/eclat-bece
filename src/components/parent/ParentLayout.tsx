@@ -1,9 +1,11 @@
-import { ReactNode, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { Outlet } from "react-router-dom";
 import { LayoutDashboard, Users, ClipboardCheck, BarChart3, CreditCard, HelpCircle, Bell, Settings, LogOut, User as UserIcon, KeyRound, Copy, Check } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ContentLoader } from "@/components/PageLoader";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ParentSidebar } from "./ParentSidebar";
@@ -22,11 +24,12 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface ParentLayoutProps {
-    children: ReactNode;
-}
-
-export function ParentLayout({ children }: ParentLayoutProps) {
+/**
+ * Persistent parent portal shell — mounted once as the /dashboard/parent
+ * layout route element. Child pages render through the Outlet inside a local
+ * Suspense boundary so lazy page chunks never blank the sidebar or header.
+ */
+export function ParentLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const { signOut, user } = useAuth();
@@ -195,7 +198,11 @@ export function ParentLayout({ children }: ParentLayoutProps) {
                     </header>
 
                     <main className="flex-1 pb-24 md:pb-8 print:p-0 print:pb-0">
-                        <div className="parent-page-shell print:p-0 print:m-0 print:max-w-none">{children}</div>
+                        <div className="parent-page-shell print:p-0 print:m-0 print:max-w-none">
+                            <Suspense fallback={<ContentLoader />}>
+                                <Outlet />
+                            </Suspense>
+                        </div>
                     </main>
 
                     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/80 bg-background/95 px-2 py-3 backdrop-blur-xl shadow-[0_-10px_30px_rgba(0,0,0,0.08)] md:hidden print:hidden">

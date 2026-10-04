@@ -1,4 +1,5 @@
-import { ReactNode, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { Outlet } from "react-router-dom";
 import { Flame, Settings, User as UserIcon, KeyRound, Link2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -16,6 +17,7 @@ import { StudentSidebar } from "@/components/StudentSidebar";
 import { StudentProfileSettings } from "@/components/StudentProfileSettings";
 import { PasswordChangeDialog } from "@/components/PasswordChangeDialog";
 import { AccountSettingsDialog } from "@/components/AccountSettingsDialog";
+import { ContentLoader } from "@/components/PageLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
@@ -23,11 +25,12 @@ import { getBadgeLevel, BadgeLevel } from "@/components/WinnerBadge";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 
-interface StudentLayoutProps {
-  children: ReactNode;
-}
-
-export function StudentLayout({ children }: StudentLayoutProps) {
+/**
+ * Persistent student portal shell — mounted once as the /dashboard/student
+ * layout route element. Child pages render through the Outlet inside a local
+ * Suspense boundary so lazy page chunks never blank the sidebar or header.
+ */
+export function StudentLayout() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme, resolvedTheme } = useTheme();
@@ -39,7 +42,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
   const [displayName, setDisplayName] = useState("");
   const [totalWins, setTotalWins] = useState(0);
   const [badgeLevel, setBadgeLevel] = useState<BadgeLevel>('bronze');
-  
+
   const isDark = resolvedTheme === "dark";
   const logo = isDark ? logoLight : logoDark;
 
@@ -78,11 +81,13 @@ export function StudentLayout({ children }: StudentLayoutProps) {
         setCurrentStreak(streakData.current_streak);
       }
 
-      // Fetch quiz results to calculate wins
+      // Fetch quiz results to calculate wins (bounded — lifetime aggregates
+      // only need counts, but keep the payload capped)
       const { data: quizResults } = await supabase
         .from("quiz_results")
         .select("score")
-        .eq("student_id", studentData.id);
+        .eq("student_id", studentData.id)
+        .limit(5000);
 
       if (quizResults) {
         const wins = quizResults.filter(result => result.score >= 80).length;
@@ -186,7 +191,9 @@ export function StudentLayout({ children }: StudentLayoutProps) {
 
           {/* Main Content */}
           <main className="flex-1 overflow-auto">
-            {children}
+            <Suspense fallback={<ContentLoader />}>
+              <Outlet />
+            </Suspense>
           </main>
         </div>
       </div>
