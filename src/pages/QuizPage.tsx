@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { startQuizSession, submitQuizAnswer, completeQuizSession, isDailyChallengeError } from "@/services/quizSession";
+import { startQuizSession, submitQuizAnswer, completeQuizSession, abandonQuizSessionServer, isDailyChallengeError } from "@/services/quizSession";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -118,6 +118,7 @@ export default function QuizPage() {
   // Server-authoritative session state
   const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
   const [grading, setGrading] = useState(false);
+  const gradingRef = useRef(false);
   const questionStartRef = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -641,6 +642,14 @@ export default function QuizPage() {
   }, [timeLeft, quizComplete, loading]);
 
   const handleTimeExpired = async () => {
+    // Guard against racing an in-flight submit_quiz_answer: if one is grading,
+    // retry shortly — the countdown stays at 0 so this re-fires.
+    if (gradingRef.current) {
+      setTimeout(() => {
+        if (!quizComplete) void handleTimeExpired();
+      }, 600);
+      return;
+    }
     const state = latestQuizState.current;
     const finalAnswers = [...state.answers];
     const finalResponses = [...state.userResponses];
@@ -696,6 +705,7 @@ export default function QuizPage() {
     if (!question) return;
 
     setGrading(true);
+    gradingRef.current = true;
     try {
       const timeSpentMs = Date.now() - questionStartRef.current;
       const result = await submitQuizAnswer(quizSessionId, question.id, selectedAnswer, timeSpentMs);
@@ -721,6 +731,7 @@ export default function QuizPage() {
       toast.error("Could not save your answer. Please try again.");
     } finally {
       setGrading(false);
+      gradingRef.current = false;
     }
   };
 
@@ -885,6 +896,10 @@ export default function QuizPage() {
       toast.error("Daily Challenge can only be completed once per day.");
       return;
     }
+    // The old session is orphaned by the cache clear — mark it abandoned.
+    if (quizSessionId && !quizComplete) {
+      void abandonQuizSessionServer(quizSessionId);
+    }
     clearSessionCache();
     setCurrentQuestion(0);
     setSelectedAnswer(null);
@@ -897,9 +912,72 @@ export default function QuizPage() {
   };
 
   const handleBackToDashboard = () => {
+    // Cache clear already disables resume; abandon the server session too so
+    // quitting mid-quiz doesn't leave it "in progress" forever.
+    if (quizSessionId && !quizComplete && !isReviewMode) {
+      void abandonQuizSessionServer(quizSessionId);
+    }
     clearSessionCache();
     navigate("/dashboard/student");
   };
+
+  // Shared flag dialog — previously duplicated in both render branches.
+  const flagDialog = (
+    <Dialog open={flagDialogOpen} onOpenChange={setFlagDialogOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Flag className="h-5 w-5 text-destructive" />
+            Flag this Question
+          </DialogTitle>
+          <DialogDescription>
+            Let us know what is wrong with this question. Our administrators will review it.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="flag-reason">Reason</Label>
+            <Select value={flagReason} onValueChange={setFlagReason}>
+              <SelectTrigger id="flag-reason">
+                <SelectValue placeholder="Select a reason" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="incorrect_answer">Incorrect Correct Option</SelectItem>
+                <SelectItem value="typo">Spelling or Formatting Issue</SelectItem>
+                <SelectItem value="missing_image">Image Failed to Load / Wrong Image</SelectItem>
+                <SelectItem value="incomplete">Question or Options Truncated</SelectItem>
+                <SelectItem value="other">Other Issue</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="flag-details">Additional Details (Optional)</Label>
+            <Textarea
+              id="flag-details"
+              placeholder="Explain the issue in detail..."
+              value={flagDetails}
+              onChange={(e) => setFlagDetails(e.target.value)}
+              maxLength={500}
+              className="min-h-[100px]"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setFlagDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleFlagQuestion}
+            disabled={submittingFlag || !flagReason}
+          >
+            {submittingFlag && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Submit Report
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   if (loading) {
     return (
@@ -1231,61 +1309,8 @@ export default function QuizPage() {
           onClose={() => setBadgeModalOpen(false)}
         />
 
-        {/* Flag Question Dialog */}
-        <Dialog open={flagDialogOpen} onOpenChange={setFlagDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Flag className="h-5 w-5 text-destructive" />
-                Flag this Question
-              </DialogTitle>
-              <DialogDescription>
-                Let us know what is wrong with this question. Our administrators will review it.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="flag-reason">Reason</Label>
-                <Select value={flagReason} onValueChange={setFlagReason}>
-                  <SelectTrigger id="flag-reason">
-                    <SelectValue placeholder="Select a reason" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="incorrect_answer">Incorrect Correct Option</SelectItem>
-                    <SelectItem value="typo">Spelling or Formatting Issue</SelectItem>
-                    <SelectItem value="missing_image">Image Failed to Load / Wrong Image</SelectItem>
-                    <SelectItem value="incomplete">Question or Options Truncated</SelectItem>
-                    <SelectItem value="other">Other Issue</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="flag-details">Additional Details (Optional)</Label>
-                <Textarea
-                  id="flag-details"
-                  placeholder="Explain the issue in detail..."
-                  value={flagDetails}
-                  onChange={(e) => setFlagDetails(e.target.value)}
-                  maxLength={500}
-                  className="min-h-[100px]"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setFlagDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleFlagQuestion}
-                disabled={submittingFlag || !flagReason}
-              >
-                {submittingFlag && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit Report
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Flag Question Dialog (shared) */}
+        {flagDialog}
       </div>
     );
   }
@@ -1511,61 +1536,8 @@ export default function QuizPage() {
         </Card>
       </div>
 
-      {/* Flag Question Dialog */}
-      <Dialog open={flagDialogOpen} onOpenChange={setFlagDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Flag className="h-5 w-5 text-destructive" />
-              Flag this Question
-            </DialogTitle>
-            <DialogDescription>
-              Let us know what is wrong with this question. Our administrators will review it.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="flag-reason">Reason</Label>
-              <Select value={flagReason} onValueChange={setFlagReason}>
-                <SelectTrigger id="flag-reason">
-                  <SelectValue placeholder="Select a reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="incorrect_answer">Incorrect Correct Option</SelectItem>
-                  <SelectItem value="typo">Spelling or Formatting Issue</SelectItem>
-                  <SelectItem value="missing_image">Image Failed to Load / Wrong Image</SelectItem>
-                  <SelectItem value="incomplete">Question or Options Truncated</SelectItem>
-                  <SelectItem value="other">Other Issue</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="flag-details">Additional Details (Optional)</Label>
-              <Textarea
-                id="flag-details"
-                placeholder="Explain the issue in detail..."
-                value={flagDetails}
-                onChange={(e) => setFlagDetails(e.target.value)}
-                maxLength={500}
-                className="min-h-[100px]"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFlagDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleFlagQuestion}
-              disabled={submittingFlag || !flagReason}
-            >
-              {submittingFlag && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Submit Report
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Flag Question Dialog (shared) */}
+      {flagDialog}
 
       {/* Lightbox Overlay */}
       {lightboxImage && (

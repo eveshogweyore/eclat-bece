@@ -124,6 +124,17 @@ export async function submitDuelTurnServer(
   };
 }
 
+export async function abandonQuizSessionServer(sessionId: string): Promise<void> {
+  // Best-effort: marks the caller's own in-progress session as abandoned so
+  // quitting mid-quiz doesn't leave sessions open forever. Silently ignored
+  // when the session is unknown, already completed, or not owned.
+  try {
+    await supabase.rpc("abandon_quiz_session", { p_session_id: sessionId });
+  } catch (err) {
+    console.warn("Could not abandon quiz session:", err);
+  }
+}
+
 export function isDailyChallengeError(err: unknown): boolean {
   return String((err as Error)?.message ?? "").includes("DAILY_CHALLENGE_ALREADY_COMPLETED");
 }

@@ -1833,6 +1833,10 @@ export type Database = {
       }
     }
     Functions: {
+      abandon_quiz_session: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
       assign_student_to_weekly_cohort: {
         Args: { p_student_id: string }
         Returns: string
@@ -1953,6 +1957,16 @@ export type Database = {
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       log_admin_action: {
         Args: {
+          _action: string
+          _admin_id: string
+          _details: Json
+          _resource_id: string
+          _resource_type: string
+        }
+        Returns: undefined
+      }
+      log_admin_action_impl: {
+        Args: {
           _action?: string
           _admin_id?: string
           _details?: Json
@@ -2056,6 +2070,10 @@ export type Database = {
         Returns: undefined
       }
       update_student_streak: {
+        Args: { p_student_id: string }
+        Returns: undefined
+      }
+      update_student_streak_impl: {
         Args: { p_student_id: string }
         Returns: undefined
       }
