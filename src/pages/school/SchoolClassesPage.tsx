@@ -11,7 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export function SchoolClassesPage() {
-  const { school, students, classes, isLoading, error, refresh: refreshSchoolData } = useSchoolData();
+  const { school, students, classes, teachers, isLoading, error, refresh: refreshSchoolData } = useSchoolData();
+  // Registered teachers only — legacy virtual rows (derived from old free-text
+  // lead names) are not real accounts to assign.
+  const registeredTeachers = teachers
+    .filter((t) => !t.id.startsWith("virtual-"))
+    .map((t) => ({ id: t.id, full_name: t.full_name }));
   const [classDialogOpen, setClassDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
@@ -215,6 +220,7 @@ export function SchoolClassesPage() {
       )}
 
       <CreateClassDialog
+        teachers={registeredTeachers}
         open={classDialogOpen}
         onOpenChange={setClassDialogOpen}
         onCreated={refreshSchoolData}

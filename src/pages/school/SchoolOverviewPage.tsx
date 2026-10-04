@@ -21,9 +21,14 @@ import { useSchoolData } from "@/hooks/useSchoolData";
 
 export function SchoolOverviewPage() {
   const navigate = useNavigate();
-  const { school, students, classes, assignmentStats, cohortAverages, gamificationTotals, topicMastery, refresh, isLoading, error } = useSchoolData();
+  const { school, students, classes, teachers, assignmentStats, cohortAverages, gamificationTotals, topicMastery, refresh, isLoading, error } = useSchoolData();
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
   const [classDialogOpen, setClassDialogOpen] = useState(false);
+
+  // Registered teachers only — legacy virtual rows are not real accounts.
+  const registeredTeachers = teachers
+    .filter((t) => !t.id.startsWith("virtual-"))
+    .map((t) => ({ id: t.id, full_name: t.full_name }));
 
   const totalStudents = students.length;
   const activeStudents = gamificationTotals.activeLearnersCount;
@@ -247,6 +252,7 @@ export function SchoolOverviewPage() {
         onCreated={() => refresh()}
       />
       <CreateClassDialog
+        teachers={registeredTeachers}
         open={classDialogOpen}
         onOpenChange={setClassDialogOpen}
         onCreated={() => refresh()}

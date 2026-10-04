@@ -11,12 +11,20 @@ import { toast } from "sonner";
 interface CreateClassDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Registered teachers of the school, for the Lead teacher dropdown. */
+  teachers?: Array<{ id: string; full_name: string }>;
   onCreated?: () => void;
 }
 
-export function CreateClassDialog({ open, onOpenChange, onCreated }: CreateClassDialogProps) {
+const LEVELS = ["Primary 6", "JSS 3"] as const;
+const LEVEL_TO_CLASS_YEAR: Record<string, "year_6" | "year_9"> = {
+  "Primary 6": "year_6",
+  "JSS 3": "year_9",
+};
+
+export function CreateClassDialog({ open, onOpenChange, teachers = [], onCreated }: CreateClassDialogProps) {
   const [name, setName] = useState("");
-  const [level, setLevel] = useState("JSS 3");
+  const [level, setLevel] = useState<string>("JSS 3");
   const [teacher, setTeacher] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -45,9 +53,8 @@ export function CreateClassDialog({ open, onOpenChange, onCreated }: CreateClass
         .single();
       if (schoolError || !school) throw schoolError || new Error("School profile not found");
 
-      const classYear = level.toLowerCase().includes("primary") || level.toLowerCase().includes("year 6")
-        ? "year_6"
-        : "year_9";
+      // Explicit cohort map: only the two supported levels exist.
+      const classYear = LEVEL_TO_CLASS_YEAR[level];
 
       const { error } = await supabase.from("school_classes").insert({
         school_id: school.id,
@@ -78,8 +85,8 @@ export function CreateClassDialog({ open, onOpenChange, onCreated }: CreateClass
         </DialogHeader>
         <div className="space-y-4 py-3">
           <div className="space-y-2"><Label htmlFor="class-name">Class name</Label><Input id="class-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. JSS 3A" className="border-[#34415b] bg-[#0f182b] text-white" /></div>
-          <div className="space-y-2"><Label htmlFor="class-level">Level</Label><select id="class-level" value={level} onChange={(event) => setLevel(event.target.value)} className="h-10 w-full rounded-md border border-[#34415b] bg-[#0f182b] px-3 text-sm text-white"><option>Primary 6</option><option>JSS 1</option><option>JSS 2</option><option>JSS 3</option><option>SS 1</option><option>SS 2</option><option>SS 3</option></select></div>
-          <div className="space-y-2"><Label htmlFor="lead-teacher">Lead teacher <span className="text-slate-500">(optional)</span></Label><Input id="lead-teacher" value={teacher} onChange={(event) => setTeacher(event.target.value)} placeholder="e.g. Mr. John Adeyemi" className="border-[#34415b] bg-[#0f182b] text-white" /></div>
+          <div className="space-y-2"><Label htmlFor="class-level">Level</Label><select id="class-level" value={level} onChange={(event) => setLevel(event.target.value)} className="h-10 w-full rounded-md border border-[#34415b] bg-[#0f182b] px-3 text-sm text-white"><option value="Primary 6">Primary 6 (Common Entrance)</option><option value="JSS 3">JSS 3 (BECE)</option></select></div>
+          <div className="space-y-2"><Label htmlFor="lead-teacher">Lead teacher <span className="text-slate-500">(optional)</span></Label><select id="lead-teacher" value={teacher} onChange={(event) => setTeacher(event.target.value)} className="h-10 w-full rounded-md border border-[#34415b] bg-[#0f182b] px-3 text-sm text-white"><option value="">Unassigned</option>{teachers.map((t) => (<option key={t.id} value={t.full_name}>{t.full_name}</option>))}</select></div>
         </div>
         <DialogFooter><Button variant="outline" onClick={close} className="border-[#34415b] text-slate-200">Cancel</Button><Button onClick={createClass} disabled={isSaving} className="bg-[#2184a7] text-white hover:bg-[#2c9bc2]">{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create class</Button></DialogFooter>
       </DialogContent>
