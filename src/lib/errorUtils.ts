@@ -16,7 +16,7 @@ export async function getEdgeFunctionError(error: unknown, fallback: string): Pr
         return body.error;
       }
     } catch {
-      // context.json() failed â€” fall through
+      // context.json() failed — fall through
     }
   }
   if (error instanceof Error) {

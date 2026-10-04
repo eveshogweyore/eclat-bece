@@ -492,7 +492,7 @@ export function SchoolBulkStudentDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="border-[#2a3852] bg-[#0c1628] text-slate-100 w-[95vw] sm:max-w-3xl max-h-[92vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="border-border bg-card text-foreground w-[95vw] sm:max-w-3xl max-h-[92vh] flex flex-col p-0 overflow-hidden">
         {/* Header */}
         <DialogHeader className="border-b border-[#1f2b42] px-6 py-4 bg-[#0a1220]">
           <div className="flex items-center justify-between">
@@ -502,7 +502,7 @@ export function SchoolBulkStudentDialog({
               </div>
               <div>
                 <DialogTitle className="text-lg font-bold text-white">Bulk Student CSV Ingestion</DialogTitle>
-                <DialogDescription className="text-xs text-slate-400">
+                <DialogDescription className="text-xs text-muted-foreground">
                   Import hundreds of student accounts and assign them to exam cohorts and classes.
                 </DialogDescription>
               </div>
@@ -521,7 +521,7 @@ export function SchoolBulkStudentDialog({
                   <Download className="h-4 w-4 text-[#3bc2f3] mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold text-white">Need a spreadsheet template?</p>
-                    <p className="text-slate-400 text-[11px] mt-0.5">
+                    <p className="text-muted-foreground text-[11px] mt-0.5">
                       Download our pre-configured CSV with required columns and sample learners.
                     </p>
                   </div>
@@ -540,14 +540,14 @@ export function SchoolBulkStudentDialog({
               {/* Default Cohort & Class Selectors */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="default-cohort" className="text-xs text-slate-300">
+                  <Label htmlFor="default-cohort" className="text-xs text-muted-foreground">
                     Default Exam Cohort (if unspecified in CSV)
                   </Label>
                   <select
                     id="default-cohort"
                     value={defaultCohort}
                     onChange={(e) => setDefaultCohort(e.target.value as any)}
-                    className="h-9 w-full rounded-lg border border-[#34415b] bg-[#071023] px-3 text-xs text-white"
+                    className="h-9 w-full rounded-lg border border-[#34415b] bg-background px-3 text-xs text-white"
                   >
                     <option value="year_9">Year 9 (JSS 3 / BECE Candidates)</option>
                     <option value="year_6">Year 6 (Primary 6 / Common Entrance)</option>
@@ -555,14 +555,14 @@ export function SchoolBulkStudentDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="default-class" className="text-xs text-slate-300">
+                  <Label htmlFor="default-class" className="text-xs text-muted-foreground">
                     Default Class Arm (optional fallback)
                   </Label>
                   <select
                     id="default-class"
                     value={defaultClassId}
                     onChange={(e) => setDefaultClassId(e.target.value)}
-                    className="h-9 w-full rounded-lg border border-[#34415b] bg-[#071023] px-3 text-xs text-white"
+                    className="h-9 w-full rounded-lg border border-[#34415b] bg-background px-3 text-xs text-white"
                   >
                     <option value="none">Auto-match from CSV "Class Arm" column</option>
                     {classes.map((cls) => (
@@ -582,7 +582,7 @@ export function SchoolBulkStudentDialog({
                   className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
                     inputMode === "file"
                       ? "bg-[#2184a7] text-white"
-                      : "text-slate-400 hover:text-white"
+                      : "text-muted-foreground hover:text-white"
                   }`}
                 >
                   Upload CSV File
@@ -593,7 +593,7 @@ export function SchoolBulkStudentDialog({
                   className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
                     inputMode === "paste"
                       ? "bg-[#2184a7] text-white"
-                      : "text-slate-400 hover:text-white"
+                      : "text-muted-foreground hover:text-white"
                   }`}
                 >
                   Paste CSV Data
@@ -617,7 +617,7 @@ export function SchoolBulkStudentDialog({
                     <Upload className="h-6 w-6" />
                   </div>
                   <p className="text-sm font-semibold text-white">Click or drag & drop a .csv file here</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                  <p className="text-xs text-muted-foreground mt-1 max-w-sm">
                     Supports comma-separated values exported from Excel, Google Sheets, or School Management Software.
                   </p>
                 </div>
@@ -628,7 +628,7 @@ export function SchoolBulkStudentDialog({
                     value={pastedText}
                     onChange={(e) => setPastedText(e.target.value)}
                     placeholder={`Full Name,Cohort,Class Arm,Username,Temporary Password\nAda Okafor,year_9,JSS 3A,ada.okafor,Pass123\nKwame Mensah,year_9,JSS 3B,kwame.m,Pass123`}
-                    className="w-full rounded-xl border border-[#34415b] bg-[#071023] p-3 text-xs font-mono text-white placeholder:text-slate-500 focus:outline-none focus:border-[#3bc2f3]"
+                    className="w-full rounded-xl border border-[#34415b] bg-background p-3 text-xs font-mono text-white placeholder:text-slate-500 focus:outline-none focus:border-[#3bc2f3]"
                   />
                   <div className="flex justify-end">
                     <Button
@@ -651,7 +651,7 @@ export function SchoolBulkStudentDialog({
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#233148] bg-[#0a1220] p-3.5 text-xs">
                 <div className="flex items-center gap-4">
                   <div>
-                    <span className="text-slate-400">Total:</span>{" "}
+                    <span className="text-muted-foreground">Total:</span>{" "}
                     <span className="font-bold text-white">{parsedRows.length}</span>
                   </div>
                   <div>
@@ -675,7 +675,7 @@ export function SchoolBulkStudentDialog({
                     size="sm"
                     variant="ghost"
                     onClick={selectAll}
-                    className="h-7 px-2 text-[11px] text-slate-300 hover:text-white"
+                    className="h-7 px-2 text-[11px] text-muted-foreground hover:text-white"
                   >
                     Select All Ready
                   </Button>
@@ -683,7 +683,7 @@ export function SchoolBulkStudentDialog({
                     size="sm"
                     variant="ghost"
                     onClick={deselectAll}
-                    className="h-7 px-2 text-[11px] text-slate-400 hover:text-white"
+                    className="h-7 px-2 text-[11px] text-muted-foreground hover:text-white"
                   >
                     Deselect All
                   </Button>
@@ -704,7 +704,7 @@ export function SchoolBulkStudentDialog({
                     className={`px-3 py-1 rounded-md font-semibold text-xs transition-colors ${
                       filterMode === t.key
                         ? "bg-[#2184a7] text-white"
-                        : "text-slate-400 hover:text-white"
+                        : "text-muted-foreground hover:text-white"
                     }`}
                   >
                     {t.label}
@@ -713,8 +713,8 @@ export function SchoolBulkStudentDialog({
               </div>
 
               {/* Table */}
-              <div className="rounded-xl border border-[#233148] bg-[#071023] overflow-hidden max-h-[360px] overflow-y-auto">
-                <div className="grid grid-cols-[40px_1.5fr_1fr_1.2fr_1fr_100px] border-b border-[#1f2b42] bg-[#0c1628] px-3 py-2 text-[11px] font-semibold text-slate-400 sticky top-0 z-10">
+              <div className="rounded-xl border border-[#233148] bg-background overflow-hidden max-h-[360px] overflow-y-auto">
+                <div className="grid grid-cols-[40px_1.5fr_1fr_1.2fr_1fr_100px] border-b border-[#1f2b42] bg-card px-3 py-2 text-[11px] font-semibold text-muted-foreground sticky top-0 z-10">
                   <span>#</span>
                   <span>Student Name</span>
                   <span>Cohort</span>
@@ -724,7 +724,7 @@ export function SchoolBulkStudentDialog({
                 </div>
 
                 {filteredPreviewRows.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-slate-400">
+                  <div className="p-8 text-center text-xs text-muted-foreground">
                     No rows match this filter.
                   </div>
                 ) : (
@@ -759,7 +759,7 @@ export function SchoolBulkStudentDialog({
                       </div>
 
                       {/* Cohort */}
-                      <span className="text-[11px] text-slate-400 truncate">
+                      <span className="text-[11px] text-muted-foreground truncate">
                         {r.cohort === "year_6" ? "Year 6" : "Year 9"}
                       </span>
 
@@ -767,12 +767,12 @@ export function SchoolBulkStudentDialog({
                       <div className="min-w-0 pr-2 font-mono text-[11px] truncate">
                         <span className="text-[#7dd3fc]">@{r.username}</span>
                         {r.isAutoUsername && (
-                          <span className="ml-1 text-[9px] text-slate-400 font-sans">(auto)</span>
+                          <span className="ml-1 text-[9px] text-muted-foreground font-sans">(auto)</span>
                         )}
                       </div>
 
                       {/* Class */}
-                      <span className="text-[11px] text-slate-300 truncate">
+                      <span className="text-[11px] text-muted-foreground truncate">
                         {r.classArmName || <span className="text-slate-500">Unassigned</span>}
                       </span>
 
@@ -804,7 +804,7 @@ export function SchoolBulkStudentDialog({
 
               <div>
                 <h3 className="text-lg font-bold text-white">Creating Student Accounts...</h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Provisioning logins, setting up gamification vaults, and allocating class arms.
                 </p>
               </div>
@@ -814,7 +814,7 @@ export function SchoolBulkStudentDialog({
                   value={totalToProcess > 0 ? (progressCount / totalToProcess) * 100 : 0}
                   className="h-2.5 bg-[#17243c]"
                 />
-                <div className="flex items-center justify-between text-xs text-slate-400">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Processing: <span className="text-white font-medium">{currentImportName}</span></span>
                   <span>{progressCount} / {totalToProcess}</span>
                 </div>
@@ -830,19 +830,19 @@ export function SchoolBulkStudentDialog({
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
                 <h3 className="text-lg font-bold text-white">Import Complete!</h3>
-                <p className="text-xs text-slate-300 mt-1 max-w-md mx-auto">
+                <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
                   Student accounts have been created and linked to your institutional roster.
                 </p>
 
                 <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-emerald-500/20 text-xs">
                   <div>
-                    <span className="text-slate-400">Successfully Created:</span>{" "}
+                    <span className="text-muted-foreground">Successfully Created:</span>{" "}
                     <span className="font-bold text-emerald-300 text-sm">
                       {results.filter((r) => r.success).length}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400">Failed / Errors:</span>{" "}
+                    <span className="text-muted-foreground">Failed / Errors:</span>{" "}
                     <span className="font-bold text-red-300 text-sm">
                       {results.filter((r) => !r.success).length}
                     </span>
@@ -851,12 +851,12 @@ export function SchoolBulkStudentDialog({
               </div>
 
               {/* Credential Export CTA */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-[#2a3852] bg-[#0c1628] p-4 text-xs">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 text-xs">
                 <div className="flex items-start gap-2.5">
                   <KeyRound className="h-4 w-4 text-[#3bc2f3] mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold text-white">Distribute Student Logins</p>
-                    <p className="text-slate-400 text-[11px] mt-0.5">
+                    <p className="text-muted-foreground text-[11px] mt-0.5">
                       Download a spreadsheet of all usernames and temporary passwords to print or share with parents and students.
                     </p>
                   </div>
@@ -878,7 +878,7 @@ export function SchoolBulkStudentDialog({
                     {results
                       .filter((r) => !r.success)
                       .map((r, i) => (
-                        <div key={i} className="flex items-center justify-between text-slate-300">
+                        <div key={i} className="flex items-center justify-between text-muted-foreground">
                           <span className="font-medium text-white">{r.fullName} (@{r.username})</span>
                           <span className="text-red-400 text-[11px]">{r.error}</span>
                         </div>
@@ -897,7 +897,7 @@ export function SchoolBulkStudentDialog({
               <Button
                 variant="outline"
                 onClick={handleClose}
-                className="border-[#34415b] text-slate-300 hover:text-white"
+                className="border-[#34415b] text-muted-foreground hover:text-white"
               >
                 Cancel
               </Button>
@@ -910,7 +910,7 @@ export function SchoolBulkStudentDialog({
               <Button
                 variant="outline"
                 onClick={() => setStep("upload")}
-                className="border-[#34415b] text-slate-300 hover:text-white"
+                className="border-[#34415b] text-muted-foreground hover:text-white"
               >
                 Back to Upload
               </Button>
@@ -925,7 +925,7 @@ export function SchoolBulkStudentDialog({
           )}
 
           {step === "progress" && (
-            <div className="w-full text-center text-xs text-slate-400 italic">
+            <div className="w-full text-center text-xs text-muted-foreground italic">
               Please do not close this window while accounts are being created...
             </div>
           )}

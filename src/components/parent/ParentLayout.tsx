@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import { LayoutDashboard, Users, ClipboardCheck, BarChart3, CreditCard, HelpCircle, Bell, Settings, LogOut, User as UserIcon, KeyRound, Copy, Check } from "lucide-react";
+import { Bell, Settings, LogOut, User as UserIcon, KeyRound, Copy, Check, HelpCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -9,6 +9,7 @@ import { ContentLoader } from "@/components/PageLoader";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ParentSidebar } from "./ParentSidebar";
+import { parentNavItems } from "./parentNav";
 import { useTheme } from "next-themes";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
@@ -98,13 +99,9 @@ export function ParentLayout() {
         }
     };
 
-    const navItems = [
-        { title: "Dashboard", url: "/dashboard/parent", icon: LayoutDashboard },
-        { title: "Children", url: "/dashboard/parent/children", icon: Users },
-        { title: "Tasks", url: "/dashboard/parent/assignments", icon: ClipboardCheck },
-        { title: "Reports", url: "/dashboard/parent/reports", icon: BarChart3 },
-        { title: "Billing", url: "/dashboard/parent/subscriptions", icon: CreditCard },
-    ];
+    // Mobile bottom nav mirrors the shared nav list (first five entries); the
+    // sidebar renders all of them.
+    const navItems = parentNavItems.slice(0, 5).map((item) => ({ ...item }));
 
     const currentPath = location.pathname + location.hash;
     const isActive = (url: string) => currentPath === url;

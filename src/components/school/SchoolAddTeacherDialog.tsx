@@ -121,7 +121,7 @@ export function SchoolAddTeacherDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="border-[#2a3852] bg-[#0c1628] text-slate-100 w-[95vw] sm:max-w-xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="border-border bg-card text-foreground w-[95vw] sm:max-w-xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader className="border-b border-[#1f2b42] pb-3">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/10 text-[#3bc2f3] border border-sky-500/20">
@@ -129,7 +129,7 @@ export function SchoolAddTeacherDialog({
             </div>
             <div>
               <DialogTitle className="text-lg font-bold text-white">Add Faculty Member</DialogTitle>
-              <DialogDescription className="text-xs text-slate-400">
+              <DialogDescription className="text-xs text-muted-foreground">
                 Register teachers, assign academic departments, and allocate class arm responsibilities.
               </DialogDescription>
             </div>
@@ -139,7 +139,7 @@ export function SchoolAddTeacherDialog({
         <div className="space-y-4 py-4 text-xs">
           {/* Full Name */}
           <div className="space-y-1.5">
-            <Label htmlFor="teacher-name" className="text-xs text-slate-300 font-semibold">
+            <Label htmlFor="teacher-name" className="text-xs text-muted-foreground font-semibold">
               Full Name & Title *
             </Label>
             <Input
@@ -147,14 +147,14 @@ export function SchoolAddTeacherDialog({
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="e.g. Dr. Kemi Balogun / Mr. Babatunde Fashola"
-              className="border-[#34415b] bg-[#071023] text-white text-xs h-9"
+              className="border-[#34415b] bg-background text-white text-xs h-9"
             />
           </div>
 
           {/* Email & Phone */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="teacher-email" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="teacher-email" className="text-xs text-muted-foreground font-semibold">
                 Email Address
               </Label>
               <Input
@@ -163,12 +163,12 @@ export function SchoolAddTeacherDialog({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="teacher@school.edu"
-                className="border-[#34415b] bg-[#071023] text-white text-xs h-9"
+                className="border-[#34415b] bg-background text-white text-xs h-9"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="teacher-phone" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="teacher-phone" className="text-xs text-muted-foreground font-semibold">
                 Phone Number
               </Label>
               <Input
@@ -176,7 +176,7 @@ export function SchoolAddTeacherDialog({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+234 803 123 4567"
-                className="border-[#34415b] bg-[#071023] text-white text-xs h-9"
+                className="border-[#34415b] bg-background text-white text-xs h-9"
               />
             </div>
           </div>
@@ -184,14 +184,14 @@ export function SchoolAddTeacherDialog({
           {/* Department & Primary Subject */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="teacher-dept" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="teacher-dept" className="text-xs text-muted-foreground font-semibold">
                 Department
               </Label>
               <select
                 id="teacher-dept"
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
-                className="h-9 w-full rounded-lg border border-[#34415b] bg-[#071023] px-3 text-xs text-white"
+                className="h-9 w-full rounded-lg border border-[#34415b] bg-background px-3 text-xs text-white"
               >
                 {DEPARTMENTS.map((dept) => (
                   <option key={dept} value={dept}>
@@ -202,7 +202,7 @@ export function SchoolAddTeacherDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="teacher-subject" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="teacher-subject" className="text-xs text-muted-foreground font-semibold">
                 Primary Subject
               </Label>
               <Input
@@ -210,22 +210,22 @@ export function SchoolAddTeacherDialog({
                 value={primarySubject}
                 onChange={(e) => setPrimarySubject(e.target.value)}
                 placeholder="e.g. Mathematics, English"
-                className="border-[#34415b] bg-[#071023] text-white text-xs h-9"
+                className="border-[#34415b] bg-background text-white text-xs h-9"
               />
             </div>
           </div>
 
           {/* Assigned Class Arms */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-slate-300 font-semibold">
+            <Label className="text-xs text-muted-foreground font-semibold">
               Assigned Class Arms ({selectedClassIds.length} allocated)
             </Label>
             {classes.length === 0 ? (
-              <p className="text-slate-500 italic text-[11px] p-2 rounded-lg bg-[#071023] border border-[#233148]">
+              <p className="text-slate-500 italic text-[11px] p-2 rounded-lg bg-background border border-[#233148]">
                 No classes registered yet. You can allocate class arms once classes are created.
               </p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-xl border border-[#233148] bg-[#071023] p-3 max-h-36 overflow-y-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-xl border border-[#233148] bg-background p-3 max-h-36 overflow-y-auto">
                 {classes.map((cls) => {
                   const isChecked = selectedClassIds.includes(cls.id);
                   return (
@@ -234,7 +234,7 @@ export function SchoolAddTeacherDialog({
                       className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 cursor-pointer text-xs transition-colors ${
                         isChecked
                           ? "border-sky-500/40 bg-sky-500/10 text-white font-medium"
-                          : "border-[#2a3852] bg-[#0c1628] text-slate-300 hover:text-white"
+                          : "border-border bg-card text-muted-foreground hover:text-white"
                       }`}
                     >
                       <input
@@ -256,7 +256,7 @@ export function SchoolAddTeacherDialog({
           <Button
             variant="outline"
             onClick={handleClose}
-            className="border-[#34415b] text-slate-300 hover:text-white text-xs"
+            className="border-[#34415b] text-muted-foreground hover:text-white text-xs"
           >
             Cancel
           </Button>

@@ -150,6 +150,7 @@ export function StudentLayout() {
                     <Button 
                       variant="ghost" 
                       size="icon"
+                      aria-label="Account menu"
                       className="hover:scale-110 transition-all duration-300 h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 rounded-full flex-shrink-0 p-0 relative"
                     >
                       <Avatar className="h-full w-full">

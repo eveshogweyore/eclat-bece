@@ -92,11 +92,11 @@ export function BadgeShowcase({
     <div className="rounded-xl border border-[#1d2a40] bg-[#0e192b] p-5 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+          <h3 className="text-base font-bold text-foreground flex items-center gap-2">
             <Award className="w-5 h-5 text-primary" />
             Badge Showcase (5 Slots)
           </h3>
-          <p className="text-xs text-slate-400">Pin your proudest achievements to your public profile</p>
+          <p className="text-xs text-muted-foreground">Pin your proudest achievements to your public profile</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -105,7 +105,7 @@ export function BadgeShowcase({
             variant="outline"
             size="sm"
             onClick={() => setGalleryOpen(true)}
-            className="h-8 border-[#2b3a54] bg-[#111e33] text-xs font-bold text-sky-300 hover:bg-[#182944] shadow-xs"
+            className="h-8 border-border bg-[#111e33] text-xs font-bold text-sky-300 hover:bg-[#182944] shadow-xs"
           >
             <Trophy className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
             View All Badges ({earnedBadgeIds.length}/{INITIAL_18_BADGES.length})

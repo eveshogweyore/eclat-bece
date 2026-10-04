@@ -89,7 +89,7 @@ export function SchoolExamRosterDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-[#2a3852] bg-[#0c1628] text-slate-100 w-[95vw] sm:max-w-3xl max-h-[92vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="border-border bg-card text-foreground w-[95vw] sm:max-w-3xl max-h-[92vh] flex flex-col p-0 overflow-hidden">
         {/* Header */}
         <DialogHeader className="border-b border-[#1f2b42] px-6 py-4 bg-[#0a1220]">
           <div className="flex items-start justify-between gap-3">
@@ -100,7 +100,7 @@ export function SchoolExamRosterDialog({
               <DialogTitle className="text-lg font-bold text-white mt-0.5 truncate">
                 {exam.title}
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-400 mt-1">
+              <DialogDescription className="text-xs text-muted-foreground mt-1">
                 {exam.subject} • {exam.duration_minutes} Mins • {exam.exam_date}
                 {exam.start_time ? ` at ${exam.start_time}` : ""} • Target: {exam.class_name || "School-wide Cohort"}
               </DialogDescription>
@@ -110,7 +110,7 @@ export function SchoolExamRosterDialog({
               variant="outline"
               onClick={handleExportCSV}
               disabled={eligibleCandidates.length === 0}
-              className="border-[#34415b] bg-[#071023] text-slate-200 hover:text-white text-xs flex-shrink-0"
+              className="border-[#34415b] bg-background text-slate-200 hover:text-white text-xs flex-shrink-0"
             >
               <Download className="mr-1.5 h-3.5 w-3.5" />
               Export Roster (.csv)
@@ -121,39 +121,39 @@ export function SchoolExamRosterDialog({
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {/* Seating Info Banner */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl border border-[#233148] bg-[#071023] p-3 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl border border-[#233148] bg-background p-3 text-xs">
             <div>
-              <p className="text-[10px] text-slate-400">Total Seated</p>
+              <p className="text-[10px] text-muted-foreground">Total Seated</p>
               <p className="text-base font-bold text-white mt-0.5">{eligibleCandidates.length} Candidates</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-400">Questions</p>
+              <p className="text-[10px] text-muted-foreground">Questions</p>
               <p className="text-base font-bold text-[#71c9ed] mt-0.5">{exam.question_count} Items</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-400">Passing Mark</p>
+              <p className="text-[10px] text-muted-foreground">Passing Mark</p>
               <p className="text-base font-bold text-emerald-400 mt-0.5">{exam.passing_score}%</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-400">Hall Status</p>
+              <p className="text-[10px] text-muted-foreground">Hall Status</p>
               <p className="text-base font-bold text-sky-400 mt-0.5">{exam.status}</p>
             </div>
           </div>
 
           {/* Search Bar */}
-          <div className="flex items-center gap-2 rounded-lg border border-[#34415b] bg-[#071023] px-3 py-2 text-slate-200">
-            <Search className="h-4 w-4 text-slate-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 rounded-lg border border-[#34415b] bg-background px-3 py-2 text-slate-200">
+            <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search candidate by name, username or roll number..."
-              className="w-full bg-transparent text-xs text-white placeholder:text-slate-400 focus:outline-none"
+              className="w-full bg-transparent text-xs text-white placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
 
           {/* Candidates Seating Table */}
-          <div className="rounded-xl border border-[#233148] bg-[#071023] overflow-hidden max-h-[360px] overflow-y-auto">
-            <div className="grid grid-cols-[80px_1.5fr_1fr_1fr_100px] border-b border-[#1f2b42] bg-[#0c1628] px-3 py-2 text-[11px] font-semibold text-slate-400 sticky top-0 z-10">
+          <div className="rounded-xl border border-[#233148] bg-background overflow-hidden max-h-[360px] overflow-y-auto">
+            <div className="grid grid-cols-[80px_1.5fr_1fr_1fr_100px] border-b border-[#1f2b42] bg-card px-3 py-2 text-[11px] font-semibold text-muted-foreground sticky top-0 z-10">
               <span>Seat No.</span>
               <span>Candidate</span>
               <span>Roll Number</span>
@@ -162,7 +162,7 @@ export function SchoolExamRosterDialog({
             </div>
 
             {filteredCandidates.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400">
+              <div className="p-8 text-center text-xs text-muted-foreground">
                 {eligibleCandidates.length === 0
                   ? "No students match this exam's cohort or class allocation."
                   : "No candidates match your search query."}
@@ -181,16 +181,16 @@ export function SchoolExamRosterDialog({
                   {/* Name */}
                   <div className="min-w-0 pr-2">
                     <p className="font-semibold text-white truncate">{candidate.name}</p>
-                    <p className="text-[11px] text-slate-400 font-mono truncate">@{candidate.username}</p>
+                    <p className="text-[11px] text-muted-foreground font-mono truncate">@{candidate.username}</p>
                   </div>
 
                   {/* Roll Number */}
-                  <span className="font-mono text-[11px] text-slate-300 truncate">
+                  <span className="font-mono text-[11px] text-muted-foreground truncate">
                     {candidate.unique_id || `BECE-${String(idx + 1).padStart(3, "0")}`}
                   </span>
 
                   {/* Class Arm */}
-                  <span className="text-[11px] text-slate-300 truncate">
+                  <span className="text-[11px] text-muted-foreground truncate">
                     {candidate.class_id ? classMap.get(candidate.class_id) || "Assigned" : "General Cohort"}
                   </span>
 
@@ -212,7 +212,7 @@ export function SchoolExamRosterDialog({
 
         {/* Footer */}
         <DialogFooter className="border-t border-[#1f2b42] px-6 py-3.5 bg-[#0a1220] flex items-center justify-between">
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-muted-foreground">
             {eligibleCandidates.length} eligible candidates assigned to hall
           </span>
           <Button

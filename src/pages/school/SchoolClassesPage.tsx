@@ -201,10 +201,11 @@ export function SchoolClassesPage() {
                     variant="ghost"
                     size="sm"
                     disabled={deletingId === klass.id}
-                        onClick={() => setDeleteTarget({ id: klass.id, name: klass.name })}
+                    aria-label={`Delete class ${klass.name}`}
+                    onClick={() => setDeleteTarget({ id: klass.id, name: klass.name })}
                     className="h-7 px-2 text-destructive hover:bg-destructive/10"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </Button>
                 </div>
               </CardContent>

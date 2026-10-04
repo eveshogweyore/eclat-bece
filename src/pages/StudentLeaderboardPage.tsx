@@ -82,17 +82,17 @@ export default function StudentLeaderboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#071023] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-sky-400" />
-          <p className="text-sm font-semibold text-slate-300">Loading standings...</p>
+          <p className="text-sm font-semibold text-muted-foreground">Loading standings...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#071023] text-slate-100 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       {/* Hero Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -107,18 +107,18 @@ export default function StudentLeaderboardPage() {
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             Leaderboards & League Cohorts
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-xl">
             Compete in your weekly 30-scholar cohort for promotion, or challenge the nation across BECE & Common Entrance
           </p>
         </div>
 
         {/* Level badge pill */}
-        <div className="flex items-center gap-2 rounded-lg border border-[#2b3a54] bg-[#111d32] px-3.5 py-2">
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-sky-500/20 text-sm font-black text-sky-400 border border-sky-500/30">
             {currentLevel}
           </span>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Your Status</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Your Status</p>
             <p className="text-xs font-extrabold text-white">Level {currentLevel} Scholar</p>
           </div>
         </div>
@@ -127,9 +127,9 @@ export default function StudentLeaderboardPage() {
       {/* Snapshot Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 animate-fade-in">
         {/* Weekly Rank */}
-        <Card className="border border-[#2b3a54] bg-[#0e192b]/90 rounded-xl shadow-none">
+        <Card className="border border-border bg-card/90 rounded-xl shadow-none">
           <CardContent className="p-3.5">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="flex items-center gap-1.5 font-bold">
                 <Flame size={14} className="text-amber-400" /> Weekly
               </span>
@@ -145,9 +145,9 @@ export default function StudentLeaderboardPage() {
         </Card>
 
         {/* Monthly Rank */}
-        <Card className="border border-[#2b3a54] bg-[#0e192b]/90 rounded-xl shadow-none">
+        <Card className="border border-border bg-card/90 rounded-xl shadow-none">
           <CardContent className="p-3.5">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="flex items-center gap-1.5 font-bold">
                 <Calendar size={14} className="text-sky-400" /> Monthly
               </span>
@@ -163,9 +163,9 @@ export default function StudentLeaderboardPage() {
         </Card>
 
         {/* All-Time Rank */}
-        <Card className="border border-[#2b3a54] bg-[#0e192b]/90 rounded-xl shadow-none">
+        <Card className="border border-border bg-card/90 rounded-xl shadow-none">
           <CardContent className="p-3.5">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="flex items-center gap-1.5 font-bold">
                 <Crown size={14} className="text-yellow-400" /> All-Time
               </span>
@@ -181,9 +181,9 @@ export default function StudentLeaderboardPage() {
         </Card>
 
         {/* Subject Rank */}
-        <Card className="border border-[#2b3a54] bg-[#0e192b]/90 rounded-xl shadow-none">
+        <Card className="border border-border bg-card/90 rounded-xl shadow-none">
           <CardContent className="p-3.5">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="flex items-center gap-1.5 font-bold">
                 <Award size={14} className="text-emerald-400" /> Maths
               </span>
@@ -202,7 +202,7 @@ export default function StudentLeaderboardPage() {
       {/* Main View Mode Selector: Cohort vs National */}
       <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)} className="space-y-6">
         <div className="flex items-center justify-between border-b border-border/40 pb-3">
-          <TabsList className="bg-[#0e192b] border border-[#2b3a54]">
+          <TabsList className="bg-[#0e192b] border border-border">
             <TabsTrigger value="cohort" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2 text-xs font-bold">
               <Users className="w-3.5 h-3.5" />
               Weekly League Cohort (30 Scholars)

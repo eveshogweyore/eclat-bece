@@ -218,7 +218,7 @@ export default function DuelOfMindsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#071023] text-slate-100 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 lg:p-8">
       {/* 1. Arena Hub View */}
       {step === "hub" && (
         <div className="max-w-6xl mx-auto space-y-6">
@@ -229,7 +229,8 @@ export default function DuelOfMindsPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-slate-400 hover:text-white"
+                  aria-label="Back to dashboard"
+                  className="h-8 w-8 text-muted-foreground hover:text-white"
                   onClick={() => navigate("/dashboard/student")}
                 >
                   <ArrowLeft className="h-5 w-5" />
@@ -244,7 +245,7 @@ export default function DuelOfMindsPage() {
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
                 Duel of Minds
               </h1>
-              <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-xl">
                 Challenge fellow scholars in real-time academic showdowns. Earn +50 EP per victory and conquer the leaderboard!
               </p>
             </div>
@@ -255,7 +256,7 @@ export default function DuelOfMindsPage() {
                 size="icon"
                 onClick={loadHubData}
                 disabled={loadingHub}
-                className="h-9 w-9 text-slate-400 hover:text-white"
+                className="h-9 w-9 text-muted-foreground hover:text-white"
                 title="Refresh battles"
               >
                 <RefreshCw className={`w-4 h-4 ${loadingHub ? "animate-spin" : ""}`} />
@@ -328,7 +329,7 @@ export default function DuelOfMindsPage() {
 
             {incomingChallenges.length === 0 ? (
               <Card className="border border-border/60 bg-[#0e192b]/80">
-                <CardContent className="p-6 text-center text-slate-400 text-sm">
+                <CardContent className="p-6 text-center text-muted-foreground text-sm">
                   No pending challenges waiting. Issue a duel to a classmate to ignite the competition!
                 </CardContent>
               </Card>
@@ -348,7 +349,7 @@ export default function DuelOfMindsPage() {
                             <CardTitle className="text-sm font-bold text-white">
                               {challenge.challengerName}
                             </CardTitle>
-                            <CardDescription className="text-xs text-slate-400">
+                            <CardDescription className="text-xs text-muted-foreground">
                               {challenge.challengerSchool || "Peer Scholar"}
                             </CardDescription>
                           </div>
@@ -359,7 +360,7 @@ export default function DuelOfMindsPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-2 space-y-3">
-                      <div className="flex items-center justify-between text-xs text-slate-300 bg-background/50 p-2.5 rounded-lg border border-border/40">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground bg-background/50 p-2.5 rounded-lg border border-border/40">
                         <span className="flex items-center gap-1.5">
                           <Flame className="w-3.5 h-3.5 text-amber-400" />
                           {challenge.numberOfQuestions} Questions
@@ -380,7 +381,7 @@ export default function DuelOfMindsPage() {
                         <Button
                           variant="outline"
                           onClick={() => handleDeclineDuel(challenge)}
-                          className="border-border/60 text-slate-400 hover:text-white text-xs h-9"
+                          className="border-border/60 text-muted-foreground hover:text-white text-xs h-9"
                         >
                           Decline
                         </Button>
@@ -397,12 +398,12 @@ export default function DuelOfMindsPage() {
             <h2 className="text-lg font-bold">Recent Battle Records</h2>
             {duelHistory.length === 0 ? (
               <Card className="border border-border/60 bg-[#0e192b]/80">
-                <CardContent className="p-6 text-center text-slate-400 text-sm">
+                <CardContent className="p-6 text-center text-muted-foreground text-sm">
                   You haven't participated in any arena duels yet. Complete your first match to earn the "First Blood" badge!
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border border-border/60 bg-[#0e192b]/90 overflow-hidden">
+              <Card className="border border-border/60 bg-card/90 overflow-hidden">
                 <div className="divide-y divide-border/40">
                   {duelHistory.map((battle) => {
                     const isChallenger = battle.challengerId === currentStudentId;
@@ -434,11 +435,11 @@ export default function DuelOfMindsPage() {
                           <div>
                             <div className="font-semibold text-white flex items-center gap-2">
                               <span>vs {opponentName}</span>
-                              <Badge variant="outline" className="text-[10px] py-0 border-border/60 text-slate-400">
+                              <Badge variant="outline" className="text-[10px] py-0 border-border/60 text-muted-foreground">
                                 {battle.subject}
                               </Badge>
                             </div>
-                            <div className="text-xs text-slate-400 mt-0.5">
+                            <div className="text-xs text-muted-foreground mt-0.5">
                               {isPending ? (
                                 myScore !== undefined && myScore !== null
                                   ? `You scored ${myScore}/${battle.numberOfQuestions} • Awaiting opponent`

@@ -71,10 +71,10 @@ export function CreateClassDialog({ open, onOpenChange, onCreated }: CreateClass
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-[#2a3852] bg-[#151e33] text-slate-100 w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="border-border bg-muted/40 text-foreground w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-xl text-white">Create new class</DialogTitle>
-          <DialogDescription className="text-slate-400">Add a class to your school directory and assign its lead teacher.</DialogDescription>
+          <DialogDescription className="text-muted-foreground">Add a class to your school directory and assign its lead teacher.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-3">
           <div className="space-y-2"><Label htmlFor="class-name">Class name</Label><Input id="class-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. JSS 3A" className="border-[#34415b] bg-[#0f182b] text-white" /></div>
@@ -159,17 +159,17 @@ export function CreateStudentDialog({ open, onOpenChange, classes = [], onCreate
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-[#2a3852] bg-[#151e33] text-slate-100 w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="border-border bg-muted/40 text-foreground w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-xl text-white">Add new student</DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             Create a school-managed student login and place them in an exam cohort.
           </DialogDescription>
         </DialogHeader>
         {credentials ? (
           <div className="space-y-4 py-3">
-            <div className="rounded-lg border border-[#2a3852] bg-[#0f182b] p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Student login</p>
+            <div className="rounded-lg border border-border bg-[#0f182b] p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Student login</p>
               <p className="mt-3 font-mono text-white">Username: {credentials.username}</p>
               <p className="mt-1 font-mono text-white">Password: {credentials.password}</p>
             </div>
@@ -243,7 +243,7 @@ export function CreateStudentDialog({ open, onOpenChange, classes = [], onCreate
                     type="button"
                     aria-label="Toggle password visibility"
                     onClick={() => setShowPassword((visible) => !visible)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

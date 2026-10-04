@@ -1,6 +1,7 @@
 import { LayoutDashboard, Users, ClipboardCheck, BarChart3, CreditCard, HelpCircle, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { parentNavItems } from "./parentNav";
 import {
   Sidebar,
   SidebarContent,
@@ -15,15 +16,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-
-const menuItems = [
-    { title: "Dashboard", url: "/dashboard/parent", icon: LayoutDashboard },
-    { title: "My Children", url: "/dashboard/parent/children", icon: Users },
-    { title: "Assignments", url: "/dashboard/parent/assignments", icon: ClipboardCheck },
-    { title: "Reports", url: "/dashboard/parent/reports", icon: BarChart3 },
-    { title: "Subscriptions", url: "/dashboard/parent/subscriptions", icon: CreditCard },
-    { title: "Help & Resources", url: "/dashboard/parent/resources", icon: HelpCircle },
-];
 
 export function ParentSidebar() {
   const location = useLocation();
@@ -51,7 +43,7 @@ export function ParentSidebar() {
                     )}
                     <SidebarGroupContent>
                         <SidebarMenu className="space-y-1 px-2">
-                            {menuItems.map((item) => {
+                            {parentNavItems.map((item) => {
                                 const Icon = item.icon;
                                 const active = isActive(item.url);
                                 return (

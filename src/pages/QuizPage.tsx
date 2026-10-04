@@ -235,7 +235,7 @@ export default function QuizPage() {
 
       if (error) throw error;
 
-      toast.success("Thank you! Question has been flagged for admin review. ðŸŽ‰");
+      toast.success("Thank you! Question has been flagged for admin review. 🎉");
       setFlaggedQuestionIds((prev) => [...prev, targetQ.id]);
       setFlagDialogOpen(false);
       setFlagReason("");
@@ -851,7 +851,7 @@ export default function QuizPage() {
       }
 
       clearSessionCache();
-      toast.success("Quiz results saved! ðŸŽ‰");
+      toast.success("Quiz results saved! 🎉");
     } catch (error) {
       console.error("Error:", error);
     }
@@ -1072,7 +1072,7 @@ export default function QuizPage() {
               }`}
             />
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-1">
-              Quiz Complete! ðŸŽ‰
+              Quiz Complete! 🎉
             </h1>
             <p className="text-sm text-muted-foreground">
               Here is how you performed on this practice set
@@ -1116,10 +1116,10 @@ export default function QuizPage() {
                   <h3 className="text-base font-black text-white">
                     {duelOutcome.isMatchComplete && duelOutcome.matchResult
                       ? duelOutcome.matchResult.outcome === "win"
-                        ? "Arena Victory! ðŸ†"
+                        ? "Arena Victory! 🏆"
                         : duelOutcome.matchResult.outcome === "draw"
-                        ? "Arena Battle Tie! ðŸ¤"
-                        : "Arena Battle Concluded ðŸ›¡ï¸"
+                        ? "Arena Battle Tie! 🤝"
+                        : "Arena Battle Concluded 🛡️"
                       : "Duel Round Recorded! âš¡"}
                   </h3>
                   <p className="text-xs text-slate-300">
@@ -1484,7 +1484,7 @@ export default function QuizPage() {
                 <div>
                   <p className="font-semibold mb-1">
                     {selectedAnswer === question.correctAnswer
-                      ? "Correct! ðŸŽ‰"
+                      ? "Correct! 🎉"
                       : "Incorrect"}
                   </p>
                   <p className="text-sm text-foreground/80">{question.explanation}</p>

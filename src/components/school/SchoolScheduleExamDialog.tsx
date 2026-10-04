@@ -141,7 +141,7 @@ export function SchoolScheduleExamDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="border-[#2a3852] bg-[#0c1628] text-slate-100 w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="border-border bg-card text-foreground w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader className="border-b border-[#1f2b42] pb-3">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/10 text-[#3bc2f3] border border-sky-500/20">
@@ -149,7 +149,7 @@ export function SchoolScheduleExamDialog({
             </div>
             <div>
               <DialogTitle className="text-lg font-bold text-white">Schedule Mock Examination</DialogTitle>
-              <DialogDescription className="text-xs text-slate-400">
+              <DialogDescription className="text-xs text-muted-foreground">
                 Configure official mock simulations, assign candidate seatings, and schedule exam time windows.
               </DialogDescription>
             </div>
@@ -159,14 +159,14 @@ export function SchoolScheduleExamDialog({
         <div className="space-y-4 py-4 text-xs">
           {/* Quick Preset Buttons */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-slate-400">Quick Exam Presets</Label>
+            <Label className="text-xs text-muted-foreground">Quick Exam Presets</Label>
             <div className="flex flex-wrap gap-1.5">
               {PRESET_TITLES.slice(0, 3).map((p) => (
                 <button
                   key={p}
                   type="button"
                   onClick={() => setTitle(p)}
-                  className="rounded-lg border border-[#2a3852] bg-[#071023] px-2.5 py-1 text-[11px] text-slate-300 hover:border-[#3bc2f3] hover:text-white transition-colors"
+                  className="rounded-lg border border-border bg-background px-2.5 py-1 text-[11px] text-muted-foreground hover:border-[#3bc2f3] hover:text-white transition-colors"
                 >
                   {p}
                 </button>
@@ -176,7 +176,7 @@ export function SchoolScheduleExamDialog({
 
           {/* Title */}
           <div className="space-y-1.5">
-            <Label htmlFor="exam-title" className="text-xs text-slate-300 font-semibold">
+            <Label htmlFor="exam-title" className="text-xs text-muted-foreground font-semibold">
               Examination Title *
             </Label>
             <Input
@@ -184,21 +184,21 @@ export function SchoolScheduleExamDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. National BECE Full Mock Simulation 1"
-              className="border-[#34415b] bg-[#071023] text-white text-xs h-9"
+              className="border-[#34415b] bg-background text-white text-xs h-9"
             />
           </div>
 
           {/* Cohort & Target Class */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="exam-cohort" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="exam-cohort" className="text-xs text-muted-foreground font-semibold">
                 Candidate Cohort
               </Label>
               <select
                 id="exam-cohort"
                 value={cohort}
                 onChange={(e) => setCohort(e.target.value as any)}
-                className="h-9 w-full rounded-lg border border-[#34415b] bg-[#071023] px-3 text-xs text-white"
+                className="h-9 w-full rounded-lg border border-[#34415b] bg-background px-3 text-xs text-white"
               >
                 <option value="year_9">Year 9 (JSS 3 / BECE Candidates)</option>
                 <option value="year_6">Year 6 (Primary 6 / Common Entrance)</option>
@@ -206,14 +206,14 @@ export function SchoolScheduleExamDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="exam-class" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="exam-class" className="text-xs text-muted-foreground font-semibold">
                 Target Class Arm
               </Label>
               <select
                 id="exam-class"
                 value={targetClassId}
                 onChange={(e) => setTargetClassId(e.target.value)}
-                className="h-9 w-full rounded-lg border border-[#34415b] bg-[#071023] px-3 text-xs text-white"
+                className="h-9 w-full rounded-lg border border-[#34415b] bg-background px-3 text-xs text-white"
               >
                 <option value="all">All Classes in Cohort (School-wide)</option>
                 {eligibleClasses.map((cls) => (
@@ -228,14 +228,14 @@ export function SchoolScheduleExamDialog({
           {/* Subject & Date */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="exam-subject" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="exam-subject" className="text-xs text-muted-foreground font-semibold">
                 Subject *
               </Label>
               <select
                 id="exam-subject"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="h-9 w-full rounded-lg border border-[#34415b] bg-[#071023] px-3 text-xs text-white"
+                className="h-9 w-full rounded-lg border border-[#34415b] bg-background px-3 text-xs text-white"
               >
                 {subjects.map((s) => (
                   <option key={s.id} value={s.name}>
@@ -249,7 +249,7 @@ export function SchoolScheduleExamDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="exam-date" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="exam-date" className="text-xs text-muted-foreground font-semibold">
                 Examination Date *
               </Label>
               <Input
@@ -257,7 +257,7 @@ export function SchoolScheduleExamDialog({
                 type="date"
                 value={examDate}
                 onChange={(e) => setExamDate(e.target.value)}
-                className="border-[#34415b] bg-[#071023] text-white text-xs h-9"
+                className="border-[#34415b] bg-background text-white text-xs h-9"
               />
             </div>
           </div>
@@ -265,7 +265,7 @@ export function SchoolScheduleExamDialog({
           {/* Time, Duration & Question Count */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="exam-time" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="exam-time" className="text-xs text-muted-foreground font-semibold">
                 Start Time
               </Label>
               <Input
@@ -273,19 +273,19 @@ export function SchoolScheduleExamDialog({
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 placeholder="09:00 AM"
-                className="border-[#34415b] bg-[#071023] text-white text-xs h-9"
+                className="border-[#34415b] bg-background text-white text-xs h-9"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="exam-duration" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="exam-duration" className="text-xs text-muted-foreground font-semibold">
                 Duration (Minutes)
               </Label>
               <select
                 id="exam-duration"
                 value={durationMinutes}
                 onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                className="h-9 w-full rounded-lg border border-[#34415b] bg-[#071023] px-3 text-xs text-white"
+                className="h-9 w-full rounded-lg border border-[#34415b] bg-background px-3 text-xs text-white"
               >
                 <option value={45}>45 Minutes (Short Drill)</option>
                 <option value={60}>60 Minutes (1 Hour)</option>
@@ -296,14 +296,14 @@ export function SchoolScheduleExamDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="exam-questions" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="exam-questions" className="text-xs text-muted-foreground font-semibold">
                 Questions
               </Label>
               <select
                 id="exam-questions"
                 value={questionCount}
                 onChange={(e) => setQuestionCount(Number(e.target.value))}
-                className="h-9 w-full rounded-lg border border-[#34415b] bg-[#071023] px-3 text-xs text-white"
+                className="h-9 w-full rounded-lg border border-[#34415b] bg-background px-3 text-xs text-white"
               >
                 <option value={30}>30 Questions</option>
                 <option value={40}>40 Questions</option>
@@ -318,7 +318,7 @@ export function SchoolScheduleExamDialog({
           {/* Pass Mark & Instructions */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="exam-pass" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="exam-pass" className="text-xs text-muted-foreground font-semibold">
                 Pass Mark Benchmark (%)
               </Label>
               <Input
@@ -328,12 +328,12 @@ export function SchoolScheduleExamDialog({
                 max={90}
                 value={passingScore}
                 onChange={(e) => setPassingScore(Number(e.target.value))}
-                className="border-[#34415b] bg-[#071023] text-white text-xs h-9"
+                className="border-[#34415b] bg-background text-white text-xs h-9"
               />
             </div>
 
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="exam-instructions" className="text-xs text-slate-300 font-semibold">
+              <Label htmlFor="exam-instructions" className="text-xs text-muted-foreground font-semibold">
                 Candidate Instructions & Seating Rules
               </Label>
               <Input
@@ -341,7 +341,7 @@ export function SchoolScheduleExamDialog({
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
                 placeholder="Candidate instructions..."
-                className="border-[#34415b] bg-[#071023] text-white text-xs h-9"
+                className="border-[#34415b] bg-background text-white text-xs h-9"
               />
             </div>
           </div>
@@ -351,7 +351,7 @@ export function SchoolScheduleExamDialog({
           <Button
             variant="outline"
             onClick={handleClose}
-            className="border-[#34415b] text-slate-300 hover:text-white text-xs"
+            className="border-[#34415b] text-muted-foreground hover:text-white text-xs"
           >
             Cancel
           </Button>

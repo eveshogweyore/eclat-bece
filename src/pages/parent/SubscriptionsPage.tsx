@@ -9,7 +9,7 @@ import { useParentAccount } from "@/hooks/useParentAccount";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DummyPaymentModal } from "@/components/parent/DummyPaymentModal";
-import { format } from "date-fns";
+import { shortDate } from "@/lib/dateUtils";
 
 interface LinkedChild {
     id: string;
@@ -287,7 +287,7 @@ export default function SubscriptionsPage() {
                                                     {sub?.expires_at && (
                                                         <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                                             <Calendar className="h-3 w-3 text-primary" />
-                                                            Expires {format(new Date(sub.expires_at), "dd MMM yyyy")}
+                                                            Expires {shortDate(sub.expires_at)}
                                                         </span>
                                                     )}
                                                 </div>
