@@ -135,7 +135,7 @@ export default function SubscriptionsPage() {
                         My Subscriptions<span className="text-primary">.</span>
                     </h1>
                     <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-                        Manage premium access for your children, view active subscription dates, and invoices.
+                        Manage premium access for your children and view subscription dates.
                     </p>
                 </div>
                 <Button
@@ -287,7 +287,7 @@ export default function SubscriptionsPage() {
                                                     {sub?.expires_at && (
                                                         <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                                             <Calendar className="h-3 w-3 text-primary" />
-                                                            Renews {format(new Date(sub.expires_at), "dd MMM yyyy")}
+                                                            Expires {format(new Date(sub.expires_at), "dd MMM yyyy")}
                                                         </span>
                                                     )}
                                                 </div>

@@ -61,8 +61,10 @@ export function AddChildDialog({ open, onOpenChange, parentId, onSuccess }: AddC
             return;
         }
 
-        if (/\s/.test(newChildData.username)) {
-            toast.error("Username cannot contain spaces");
+        // Mirror the server's rule exactly so parents aren't surprised late
+        // (create-student-account enforces /^[a-z0-9._-]{2,20}$/).
+        if (!/^[a-z0-9._-]+$/.test(newChildData.username)) {
+            toast.error("Username may only contain lowercase letters, numbers, dots, underscores, or hyphens");
             return;
         }
 
@@ -175,6 +177,7 @@ export function AddChildDialog({ open, onOpenChange, parentId, onSuccess }: AddC
                 .maybeSingle();
 
             let requestId = existingReq?.id;
+            let requestIsNew = false;
 
             if (!existingReq || existingReq.status === "rejected") {
                 const { data: newReq, error: insertError } = await supabase
@@ -189,29 +192,33 @@ export function AddChildDialog({ open, onOpenChange, parentId, onSuccess }: AddC
 
                 if (insertError) throw insertError;
                 requestId = newReq.id;
+                requestIsNew = true;
             }
 
-            // Get current parent's display name
-            const { data: { user } } = await supabase.auth.getUser();
-            const { data: parentProfile } = await supabase
-                .from("profiles")
-                .select("full_name")
-                .eq("id", user?.id || "")
-                .maybeSingle();
+            // Only notify the student when a request was actually (re)created —
+            // re-tapping on an existing pending request must not spam their inbox.
+            if (requestIsNew) {
+                // Get current parent's display name
+                const { data: { user } } = await supabase.auth.getUser();
+                const { data: parentProfile } = await supabase
+                    .from("profiles")
+                    .select("full_name")
+                    .eq("id", user?.id || "")
+                    .maybeSingle();
 
-            // Send notification to the student
-            await supabase.from("notifications").insert({
-                user_id: foundStudent.user_id,
-                type: "link_request",
-                title: "Parent Link Request",
-                message: `${parentProfile?.full_name || "A parent"} requested to link to your account.`,
-                read: false,
-                metadata: {
-                    request_id: requestId,
-                    parent_id: parentId,
-                    parent_name: parentProfile?.full_name || "Parent",
-                },
-            });
+                await supabase.from("notifications").insert({
+                    user_id: foundStudent.user_id,
+                    type: "link_request",
+                    title: "Parent Link Request",
+                    message: `${parentProfile?.full_name || "A parent"} requested to link to your account.`,
+                    read: false,
+                    metadata: {
+                        request_id: requestId,
+                        parent_id: parentId,
+                        parent_name: parentProfile?.full_name || "Parent",
+                    },
+                });
+            }
 
             toast.success(`Link request sent to ${foundStudent.profile.full_name || "student"}!`);
             setLinkRequestSent(true);
