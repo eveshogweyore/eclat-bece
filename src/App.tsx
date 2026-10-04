@@ -81,6 +81,11 @@ const AdminSettingsPage = lazy(() => import("./pages/AdminSettingsPage"));
 const PassagesPage = lazy(() => import("./pages/PassagesPage"));
 const AdminSubjectsPage = lazy(() => import("./pages/AdminSubjectsPage"));
 const FlagReportsPage = lazy(() => import("./pages/admin/FlagReportsPage"));
+const TeacherLoginPage = lazy(() => import("./pages/auth/TeacherLoginPage"));
+const TeacherLayout = lazy(() => import("./components/teacher/TeacherLayout"));
+const TeacherDashboardPage = lazy(() => import("./pages/teacher/TeacherDashboardPage"));
+const TeacherStudentsPage = lazy(() => import("./pages/teacher/TeacherStudentsPage"));
+const TeacherAssignmentsPage = lazy(() => import("./pages/teacher/TeacherAssignmentsPage"));
 
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
@@ -125,6 +130,7 @@ const App = () => (
                 <Route path="/student-login" element={<StudentLogInPage />} />
                 <Route path="/student-signup" element={<Navigate to="/student-login" replace />} />
                 <Route path="/school-login" element={<SchoolLogInPage />} />
+                <Route path="/teacher-login" element={<TeacherLoginPage />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/password-reset" element={<PasswordResetPage />} />
                 <Route path="/verify-email" element={<EmailVerificationPage />} />
@@ -186,6 +192,15 @@ const App = () => (
                   <Route path="exams" element={<SchoolExamsPage />} />
                   <Route path="leaderboard" element={<SchoolLeaderboardPage />} />
                   <Route path="settings" element={<SchoolSettingsPage />} />
+                </Route>
+                <Route path="/dashboard/teacher" element={
+                  <ProtectedRoute requiredRole="teacher">
+                    <TeacherLayout />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<TeacherDashboardPage />} />
+                  <Route path="students" element={<TeacherStudentsPage />} />
+                  <Route path="assignments" element={<TeacherAssignmentsPage />} />
                 </Route>
                 <Route path="/quiz" element={
                   <ProtectedRoute>

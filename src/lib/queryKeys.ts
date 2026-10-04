@@ -36,4 +36,7 @@ export const queryKeys = {
 
   /** Count of pending flag reports (filter badge). */
   flagReportsPendingCount: () => ["flag-reports", "pending-count"] as const,
+
+  /** Teacher dashboard dataset (own registry row, classes, roster, assignments). */
+  teacher: (userId?: string | null) => ["teacher-portal", userId ?? "anon"] as const,
 } as const;

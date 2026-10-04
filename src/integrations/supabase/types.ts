@@ -706,6 +706,7 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
+          created_by_teacher_id: string | null
           duration: number
           id: string
           num_questions: number
@@ -721,6 +722,7 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string
+          created_by_teacher_id?: string | null
           duration: number
           id?: string
           num_questions: number
@@ -736,6 +738,7 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string
+          created_by_teacher_id?: string | null
           duration?: number
           id?: string
           num_questions?: number
@@ -749,6 +752,13 @@ export type Database = {
           topics?: string[]
         }
         Relationships: [
+          {
+            foreignKeyName: "practice_assignments_created_by_teacher_id_fkey"
+            columns: ["created_by_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "school_teachers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "practice_assignments_parent_id_fkey"
             columns: ["parent_id"]
@@ -1262,6 +1272,7 @@ export type Database = {
           school_id: string
           status: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           assigned_class_ids?: string[] | null
@@ -1275,6 +1286,7 @@ export type Database = {
           school_id: string
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           assigned_class_ids?: string[] | null
@@ -1288,6 +1300,7 @@ export type Database = {
           school_id?: string
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2079,7 +2092,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "student" | "parent" | "school" | "admin"
+      app_role: "student" | "parent" | "school" | "admin" | "teacher"
       class_year: "year_6" | "year_9"
     }
     CompositeTypes: {
@@ -2211,7 +2224,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      app_role: ["student", "parent", "school", "admin"],
+      app_role: ["student", "parent", "school", "admin", "teacher"],
       class_year: ["year_6", "year_9"],
     },
   },

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 /**
  * ProtectedRoute Component - Client-Side Route Protection
@@ -41,7 +42,7 @@ import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "student" | "parent" | "school" | "admin";
+  requiredRole?: "student" | "parent" | "school" | "admin" | "teacher";
 }
 
 export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
@@ -160,6 +161,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
             if (userRole.role === "student") navigateRef.current("/dashboard/student");
             else if (userRole.role === "parent") navigateRef.current("/dashboard/parent");
             else if (userRole.role === "school") navigateRef.current("/dashboard/school");
+            else if (userRole.role === "teacher") navigateRef.current("/dashboard/teacher");
             else if (userRole.role === "admin") navigateRef.current("/admin");
             else navigateRef.current("/auth/login/role-selection");
             return;
@@ -167,6 +169,22 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
 
           // Role now matches required
           roleData = userRole;
+        }
+
+        // Teacher gate: the account must be linked to a school_teachers row.
+        if (requiredRole === "teacher") {
+          const { data: teacherRow } = await supabase
+            .from("school_teachers")
+            .select("id")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+
+          if (!teacherRow) {
+            toast.error("This account is not linked to a teacher record. Contact your school administrator.");
+            await supabase.auth.signOut();
+            navigateRef.current("/teacher-login");
+            return;
+          }
         }
 
         // School onboarding gate: the school must complete its profile (school

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, ArrowLeft, Building2, GraduationCap, Users } from "lucide-react";
+import { ArrowRight, ArrowLeft, Building2, GraduationCap, Users, ClipboardCheck } from "lucide-react";
 import { useTheme } from "next-themes";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import eclatlLogo from "@/assets/logo.png";
@@ -30,6 +30,12 @@ export default function SignUpRoleSelectionPage({ login = false }: { login?: boo
         icon: Building2,
         title: "School",
         description: "Access school tools to manage students, classes, and analytics.",
+      },
+      {
+        id: "teacher",
+        icon: ClipboardCheck,
+        title: "Teacher",
+        description: "Log in to assign practice tasks and track your allocated classes.",
       },
     ]
     : [
