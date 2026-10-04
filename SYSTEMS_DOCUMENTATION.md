@@ -1216,6 +1216,20 @@ All admin actions are logged to `admin_audit_log` table via `log_admin_action` f
 
 Schools can link students using their unique school code (stored in `schools.unique_code`).
 
+### Teacher Accounts & Portal
+
+Teachers are provisioned by schools — there is no self-signup.
+
+**Identity:** the `school_teachers` registry row doubles as the teacher's domain record and gains a nullable `user_id uuid UNIQUE → auth.users(id)` link. The `app_role` enum includes `'teacher'`. Practice assignments created by teachers carry `created_by_teacher_id` (FK → `school_teachers`).
+
+**Provisioning:** `create-teacher-account` Edge Function (verify_jwt). Caller must be the owning school (`schools.user_id` match). Actions: **create-and-link** (auth user with `email_confirm: true` → `user_roles('teacher')` → `profiles(email_verified: true)` → `school_teachers.user_id` link, with user-deletion rollback) and **reset-password** (for linked teachers). The school UI lives in the Teachers page: Add dialog has an optional "Create login account" section; Edit dialog has a Teacher Portal Login panel (status pill + create-login / reset-password).
+
+**Login:** `/teacher-login` (email + password). `TeacherLoginPage` checks the authoritative `user_roles.role === 'teacher'` and signs wrong-role users out; no `provision-user` fallback (teachers cannot self-provision).
+
+**Teacher portal** (`/dashboard/teacher`, persistent `TeacherLayout` shell + `ProtectedRoute requiredRole="teacher"` with a `school_teachers`-link gate): Dashboard (allocated classes, students, pending tasks, roster average), My Students (class-scoped roster with averages, per-student Report via `StudentReportDialog` and Assign actions), Assignments (task list with school/teacher attribution). All data flows through `useTeacherData` (TanStack Query, `queryKeys.teacher`).
+
+**Access model (RLS):** every teacher policy derives from their own `school_teachers` row — they see their school's classes, students whose `class_id` is in their `allocated_class_ids` array, those students' profiles/quiz results/assignments, and can INSERT practice assignments only for allocated-class students with their own `created_by_teacher_id` (school matches, teacher Active). The `enforce_practice_assignment_rules` trigger independently re-validates the teacher allocation branch, and the premium/10-question cap applies to teacher-created tasks too.
+
 ---
 
 ## Quiz & Practice System
