@@ -75,7 +75,7 @@ export default function SchoolLogInPage() {
       }
 
       // Get user's role from database
-      let { data: roleData } = await supabase
+      const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", data.user.id)
@@ -118,13 +118,17 @@ export default function SchoolLogInPage() {
 
       // Validate that user is a school
       if (userRole !== "school") {
+        const isTeacher = userRole === "teacher";
         toast({
           title: "Account Incompatible",
-          description: "This email is registered under a different account type and cannot be used for School access. Please sign in through your designated portal or use a different email.",
+          description: isTeacher
+            ? "This is a teacher account. Use the Teacher Portal link below to sign in."
+            : "This email is registered under a different account type and cannot be used for School access. Please sign in through your designated portal or use a different email.",
           variant: "destructive",
         });
         await supabase.auth.signOut();
         setIsLoading(false);
+        if (isTeacher) navigate("/teacher-login");
         return;
       }
 
@@ -224,7 +228,22 @@ export default function SchoolLogInPage() {
           <button type="button" onClick={handleGoogleLogin} disabled={isLoading} className="mt-3 flex h-9 w-full items-center justify-center gap-2 border border-slate-300 bg-slate-50 text-[12px] font-bold tracking-[1px] text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-[#2a3a53] dark:bg-[#111b30] dark:text-[#dce7ff] dark:hover:bg-[#1a2a42]">Continue with Google</button>
         </section>
 
-        <button type="button" onClick={() => navigate("/auth/login/role-selection")} className="mt-7 flex items-center gap-2 text-[11px] font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-[#c1cada] dark:hover:text-white"><ArrowLeft size={14} /> Back to Role Selection</button>
+        <div className="mt-4 w-full max-w-[330px] animate-fade-in text-center">
+          <div className="flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-slate-300 dark:bg-[#2a3a53]" />
+            <span className="text-[9px] font-bold uppercase tracking-[1.5px] text-slate-400 dark:text-[#718098]">Teachers</span>
+            <span className="h-px flex-1 bg-slate-300 dark:bg-[#2a3a53]" />
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/teacher-login")}
+            className="mt-2 text-[11px] font-medium text-slate-600 transition-colors hover:text-sky-600 dark:text-[#c1cada] dark:hover:text-[#72c8f6]"
+          >
+            Are you a teacher? <span className="font-bold underline">Sign in to the Teacher Portal</span>
+          </button>
+        </div>
+
+        <button type="button" onClick={() => navigate("/auth/login/role-selection")} className="mt-7 flex items-center gap-2 text-[11px] font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-[#c1cada] dark:hover:bg-transparent dark:hover:text-white"><ArrowLeft size={14} /> Back to Role Selection</button>
         <p className="mt-4 text-[9px] tracking-[1px] text-slate-400 dark:text-[#718098]">© 2024 Eclat Platform. All rights reserved.</p>
       </div>
     </main>
