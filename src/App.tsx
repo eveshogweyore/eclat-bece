@@ -147,6 +147,7 @@ const App = () => (
                   <Route path="practice" element={<StudentPractice />} />
                   <Route path="assignments" element={<StudentAssignments />} />
                   <Route path="progress" element={<StudentProgressPage />} />
+                  <Route path="subject-analytics" element={<SubjectAnalytics />} />
                   <Route path="leaderboard" element={<StudentLeaderboardPage />} />
                   <Route path="settings" element={<StudentSettingsPage />} />
                   <Route path="duel-of-minds" element={<DuelOfMindsPage />} />
@@ -189,11 +190,6 @@ const App = () => (
                 <Route path="/quiz" element={
                   <ProtectedRoute>
                     <QuizPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/subject-analytics" element={
-                  <ProtectedRoute>
-                    <SubjectAnalytics />
                   </ProtectedRoute>
                 } />
                 {/* Admin Routes */}

@@ -1,4 +1,4 @@
-import { FunctionsHttpError } from "@supabase/supabase-js";
+﻿import { FunctionsHttpError } from "@supabase/supabase-js";
 
 /**
  * Extracts the real error message from a Supabase Edge Function error.
@@ -16,7 +16,7 @@ export async function getEdgeFunctionError(error: unknown, fallback: string): Pr
         return body.error;
       }
     } catch {
-      // context.json() failed — fall through
+      // context.json() failed â€” fall through
     }
   }
   if (error instanceof Error) {
