@@ -15,6 +15,9 @@ export interface ChildrenDataset {
   masteries: Array<Record<string, unknown>>;
 }
 
+/** League display names indexed by tier (tier 1 = first entry). */
+const LEAGUE_NAMES = ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Elite"];
+
 interface UseChildrenDataOptions {
   /** Also fetch gamification profiles and topic mastery rows for the children. */
   withGamification?: boolean;
@@ -26,7 +29,9 @@ interface UseChildrenDataOptions {
  * kept copy-pasted variants of this aggregation).
  */
 export function useChildrenData(parentId: string | null | undefined, options: UseChildrenDataOptions = {}) {
-  const { withGamification = false } = options;
+  // Enrichment (gamification profile + topic mastery) defaults ON so every
+  // consumer renders real Four-Pillars data instead of silent defaults.
+  const { withGamification = true } = options;
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -80,11 +85,14 @@ export function useChildrenData(parentId: string | null | undefined, options: Us
 
       const allQuizzes = (quizzesRes.data ?? []) as unknown as QuizResult[];
       const allAssignments = (assignmentsRes.data ?? []) as unknown as Assignment[];
+      const gameRows = (gameRes.data ?? []) as Array<Record<string, any>>;
+      const masteryRows = (masteryRes.data ?? []) as Array<Record<string, any>>;
       const nameMap = new Map(typedChildren.map((c) => [c.id, c.profile?.full_name || "Unknown"]));
       const globalActivities = allQuizzes
         .map((q) => ({ ...q, student_name: nameMap.get(q.student_id) || "Student" }))
         .slice(0, 3);
 
+      const gameMap = new Map(gameRows.map((g) => [g.student_id as string, g]));
       const assignMap = new Map<string, Assignment[]>();
       const analyticsMap = new Map<string, ChildAnalytics>();
 
@@ -110,6 +118,15 @@ export function useChildrenData(parentId: string | null | undefined, options: Us
           count: subData.count,
         }));
 
+        // Real gamification data for the Four Pillars strip (level/EP, streak,
+        // league tier, strong topics) — previously left at defaults.
+        const game = gameMap.get(sId);
+        const childMastery = masteryRows.filter((m) => m.student_id === sId);
+        const strongTopics = childMastery.filter(
+          (m) => m.status === "mastered" || Number(m.rolling_accuracy || 0) >= 80
+        ).length;
+        const leagueTier = Number(game?.current_league_tier || 1);
+
         analyticsMap.set(sId, {
           studentId: sId,
           averageScore: childQuizzes.length > 0
@@ -120,6 +137,13 @@ export function useChildrenData(parentId: string | null | undefined, options: Us
           recentQuizzes: childQuizzes.slice(0, 5),
           pendingAssignments: pending,
           completedAssignments: completed,
+          lifetimeEP: Number(game?.lifetime_ep || 0),
+          currentLevel: Number(game?.current_level || 1),
+          leagueTier,
+          leagueName: LEAGUE_NAMES[leagueTier - 1],
+          streakCount: Number(game?.streak_count || 0),
+          streakShields: Number(game?.streak_shields || 0),
+          strongTopicsCount: strongTopics,
         });
       });
 

@@ -12,6 +12,7 @@ import { AssignPracticeDialog } from "@/components/AssignPracticeDialog";
 import { ChildOverviewCard } from "@/components/parent/ChildOverviewCard";
 import { DummyPaymentModal } from "@/components/parent/DummyPaymentModal";
 import { ParentActivityFeed } from "@/components/parent/ParentActivityFeed";
+import { PortalDataState } from "@/components/PortalDataState";
 import { DeleteChildDialog } from "@/components/parent/DeleteChildDialog";
 import { AddChildDialog } from "@/components/parent/AddChildDialog";
 import { EditChildNameDialog } from "@/components/parent/EditChildNameDialog";
@@ -160,6 +161,7 @@ export default function ParentDashboard() {
     childrenAssignments,
     globalActivities,
     isLoading,
+    error: childrenError,
     refresh: refreshChildren,
   } = useChildrenData(parentId, { withGamification: true });
 
@@ -229,6 +231,14 @@ export default function ParentDashboard() {
       setIsDeleting(false);
     }
   };
+
+  // Failures must not masquerade as an empty family.
+  if (parentAccountLoading || isLoading) {
+    return <PortalDataState loading />;
+  }
+  if (childrenError) {
+    return <PortalDataState error={childrenError} onRetry={refreshChildren} />;
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">

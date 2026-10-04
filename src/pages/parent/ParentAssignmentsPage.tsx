@@ -203,8 +203,10 @@ export default function ParentAssignmentsPage() {
 
       const typedChildren = (childrenData || []) as unknown as LinkedChild[];
       setChildren(typedChildren);
-      if (typedChildren.length > 0 && !selectedChildForAssign) {
-        setSelectedChildForAssign(typedChildren[0]);
+      if (typedChildren.length > 0) {
+        // Preselect the first child once; the setter is stable and the value is
+        // read via the ref below to avoid a self-retriggering fetch loop.
+        setSelectedChildForAssign((current) => current ?? typedChildren[0]);
       }
 
       const studentMap = new Map<string, { name: string; userId: string }>();
@@ -241,7 +243,9 @@ export default function ParentAssignmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedChildForAssign]);
+    // Deps intentionally exclude selectedChildForAssign: the initial selection
+    // set above must not re-trigger the fetch.
+  }, []);
 
   useEffect(() => {
     if (parentId) {
@@ -501,7 +505,7 @@ export default function ParentAssignmentsPage() {
                         <div>
                           <div className="mb-4 flex items-center justify-between">
                             <span className="rounded-full bg-[#ff5d67]/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#ff6a70]">
-                              {item.status === "completed" ? "Low Score" : "Overdue"}
+                              {item.status === "completed" ? "Low Score" : "Needs Attention"}
                             </span>
                             <span className="text-xs font-semibold text-muted-foreground">
                               {getRelativeTime(item.created_at)}
@@ -516,8 +520,8 @@ export default function ParentAssignmentsPage() {
 
                           {item.topics && item.topics.length > 0 && (
                             <div className="mt-3 flex flex-wrap gap-1">
-                              {item.topics.slice(0, 2).map((t, idx) => (
-                                <span key={idx} className="rounded-md bg-background/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                              {item.topics.slice(0, 2).map((t) => (
+                                <span key={t} className="rounded-md bg-background/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                                   {t}
                                 </span>
                               ))}
@@ -601,8 +605,8 @@ export default function ParentAssignmentsPage() {
 
                           {item.topics && item.topics.length > 0 && (
                             <div className="mt-3 flex flex-wrap gap-1">
-                              {item.topics.slice(0, 2).map((t, idx) => (
-                                <span key={idx} className="rounded-md bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                              {item.topics.slice(0, 2).map((t) => (
+                                <span key={t} className="rounded-md bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                                   {t}
                                 </span>
                               ))}
@@ -664,7 +668,7 @@ export default function ParentAssignmentsPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {completed.slice(0, 8).map((item) => (
+                  {completed.map((item) => (
                     <div
                       key={item.id}
                       onClick={() => setDetailsAssignment(item)}
@@ -687,6 +691,7 @@ export default function ParentAssignmentsPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          disabled={loadingReview}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleReviewAssignment(item);
@@ -694,7 +699,11 @@ export default function ParentAssignmentsPage() {
                           className="h-8 px-2.5 text-xs font-bold gap-1 rounded-xl border-primary/25 text-primary hover:bg-primary/10 transition-colors shadow-none"
                           title="Review questions and answers"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          {loadingReview ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
                           Review
                         </Button>
                       </div>

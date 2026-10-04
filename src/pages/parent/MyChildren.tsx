@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Users, Plus, LayoutDashboard, Search, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import { useChildrenData } from "@/hooks/useChildrenData";
 import { LinkedChild, Assignment } from "@/types/parent";
 import { getEdgeFunctionError } from "@/lib/errorUtils";
 import { QuestionSnapshotDialog } from "@/components/quiz/QuestionSnapshotDialog";
+import { PortalDataState } from "@/components/PortalDataState";
 
 const getErrorMessage = (error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback;
@@ -33,6 +34,7 @@ export default function MyChildren() {
         childrenAnalytics,
         childrenAssignments,
         isLoading,
+        error: childrenError,
         refresh: refreshChildren,
     } = useChildrenData(parentId);
 
@@ -167,6 +169,14 @@ export default function MyChildren() {
         child.profile.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         child.profile.username?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    // Failures must not masquerade as an empty family.
+    if (isLoading) {
+        return <PortalDataState loading />;
+    }
+    if (childrenError) {
+        return <PortalDataState error={childrenError} onRetry={refreshChildren} />;
+    }
 
     return (
         <div className="w-full space-y-6 sm:space-y-8 animate-fade-in">

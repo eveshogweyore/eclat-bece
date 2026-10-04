@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Award, Clock, Loader2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Award, Clock, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
 import logoDark from "@/assets/logo-dark.png";
@@ -22,6 +22,7 @@ export function StudentReportDialog({ open, onOpenChange, studentId, studentName
   const { theme } = useTheme();
   const logo = theme === "dark" ? logoLight : logoDark;
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [stats, setStats] = useState<{
     avgScore: number;
     totalQuestions: number;
@@ -42,31 +43,15 @@ export function StudentReportDialog({ open, onOpenChange, studentId, studentName
     if (!open) return;
 
     if (!studentId) {
-      // Fallback to mock data if studentId is not provided (e.g. school mock mode)
-      setStats({
-        avgScore: 81,
-        totalQuestions: 680,
-        accuracy: 81,
-        streak: 7,
-      });
-      setSubjectsData([
-        { name: "Mathematics", score: 85, progress: 85, trend: "up", questionsCompleted: 156 },
-        { name: "English Language", score: 78, progress: 78, trend: "up", questionsCompleted: 142 },
-        { name: "Basic Science", score: 72, progress: 72, trend: "down", questionsCompleted: 128 },
-        { name: "Social Studies", score: 88, progress: 88, trend: "up", questionsCompleted: 134 },
-        { name: "Business Studies", score: 80, progress: 80, trend: "up", questionsCompleted: 120 },
-      ]);
-      setAchievements(["🏆 Quiz Master", "🔥 7-Day Streak", "⭐ Top 10 Performer", "📚 150+ Questions"]);
-      setRecommendations([
-        "✓ Excellent progress in Mathematics and Social Studies",
-        "✓ Consider more practice in Basic Science to improve confidence",
-        "✓ Maintain daily practice routine for best results"
-      ]);
+      // Never render fabricated stats: without a student there is nothing to
+      // report. The dialog body handles the empty state.
+      setLoadError("No student selected.");
       return;
     }
 
     const fetchData = async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         // 1. Fetch quiz results
         const { data: quizResults, error: quizError } = await supabase
@@ -194,6 +179,7 @@ export function StudentReportDialog({ open, onOpenChange, studentId, studentName
 
       } catch (err) {
         console.error("Error loading student report data:", err);
+        setLoadError(err instanceof Error ? err.message : "Failed to load report data.");
       } finally {
         setLoading(false);
       }
@@ -219,6 +205,11 @@ export function StudentReportDialog({ open, onOpenChange, studentId, studentName
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
           </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+            <AlertTriangle className="h-8 w-8 text-destructive/60" />
+            <p className="text-sm text-muted-foreground">{loadError}</p>
+          </div>
         ) : (
           <>
             {/* Student Info */}
@@ -232,7 +223,14 @@ export function StudentReportDialog({ open, onOpenChange, studentId, studentName
               </div>
             </div>
 
-            {stats && (
+            {loadError ? null : !stats ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+                <AlertTriangle className="h-8 w-8 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">
+                  Report data could not be loaded. Close and reopen this dialog to try again.
+                </p>
+              </div>
+            ) : (
               <>
                 {/* Overall Statistics */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

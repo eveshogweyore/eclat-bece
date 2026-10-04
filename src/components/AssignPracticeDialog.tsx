@@ -208,22 +208,8 @@ export function AssignPracticeDialog({ open, onOpenChange, child, onSuccess }: A
 
       if (error) throw error;
 
-      // Send in-app notification to the child
-      await supabase
-        .from("notifications")
-        .insert({
-          user_id: child.user_id,
-          title: "New Task Assigned",
-          message: `Your parent has assigned you a new ${selectedSubject} practice task: "${selectedTopics.join(', ')}".`,
-          type: "parent_assignment",
-          read: false,
-          metadata: {
-            subject: selectedSubject,
-            num_questions: numQuestions,
-            duration: duration,
-            topics: selectedTopics
-          }
-        });
+      // No client notification insert here: the notify_practice_assignment_created
+      // database trigger already notifies the student — a manual insert doubled it.
 
       toast.success("Task assigned successfully!", {
         description: `${child.profile.full_name} will see this in their dashboard.`,
