@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Briefcase, Mail, Phone, Building2, Trash2, Check, Loader2 } from "lucide-react";
+import { Briefcase, Mail, Phone, Trash2, Check, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SchoolClassItem, SchoolTeacherItem } from "@/hooks/useSchoolData";
+import { SchoolTeacherItem } from "@/hooks/useSchoolData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -19,21 +19,11 @@ interface SchoolEditTeacherDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   teacher: SchoolTeacherItem | null;
-  classes: SchoolClassItem[];
+  /** Only lead_teacher is needed here (to clear it on delete). */
+  classes: Array<{ id: string; lead_teacher: string | null }>;
   schoolId: string;
   onSaved?: () => void;
 }
-
-const DEPARTMENTS = [
-  "Sciences & Technology",
-  "Mathematics & Numeracy",
-  "Languages & English Studies",
-  "Pre-Vocational & Business Studies",
-  "Humanities & National Values",
-  "Creative & Cultural Arts",
-  "Class Arm Faculty",
-  "General / Administrative Faculty",
-];
 
 export function SchoolEditTeacherDialog({
   open,
@@ -46,9 +36,6 @@ export function SchoolEditTeacherDialog({
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [department, setDepartment] = useState(DEPARTMENTS[0]);
-  const [primarySubject, setPrimarySubject] = useState("");
-  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [status, setStatus] = useState<"Active" | "On Leave" | "Inactive">("Active");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -62,20 +49,11 @@ export function SchoolEditTeacherDialog({
       setFullName(teacher.full_name || "");
       setEmail(teacher.email || "");
       setPhone(teacher.phone || "");
-      setDepartment(teacher.department || DEPARTMENTS[0]);
-      setPrimarySubject(teacher.primary_subject || "");
-      setSelectedClassIds(teacher.assigned_class_ids || []);
       setStatus(teacher.status || "Active");
     }
   }, [teacher]);
 
   if (!teacher) return null;
-
-  const toggleClassSelect = (classId: string) => {
-    setSelectedClassIds((prev) =>
-      prev.includes(classId) ? prev.filter((id) => id !== classId) : [...prev, classId]
-    );
-  };
 
   const isVirtual = teacher.id.startsWith("virtual-");
 
@@ -131,37 +109,31 @@ export function SchoolEditTeacherDialog({
 
     setIsSaving(true);
     try {
+      // Never send department/primary_subject/assigned_class_ids here: the
+      // allocation model is retired and legacy values must be preserved.
+      const profileUpdate = {
+        full_name: fullName.trim(),
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        status,
+      };
       if (isVirtual) {
         // Promote virtual teacher to genuine school_teachers table
         const { error } = await supabase.from("school_teachers").insert({
           school_id: schoolId,
-          full_name: fullName.trim(),
-          email: email.trim() || null,
-          phone: phone.trim() || null,
-          department: department.trim() || null,
-          primary_subject: primarySubject.trim() || null,
-          assigned_class_ids: selectedClassIds,
-          status,
+          ...profileUpdate,
         });
         if (error) throw error;
       } else {
         // Update existing record
         const { error } = await supabase
           .from("school_teachers")
-          .update({
-            full_name: fullName.trim(),
-            email: email.trim() || null,
-            phone: phone.trim() || null,
-            department: department.trim() || null,
-            primary_subject: primarySubject.trim() || null,
-            assigned_class_ids: selectedClassIds,
-            status,
-          })
+          .update(profileUpdate)
           .eq("id", teacher.id);
         if (error) throw error;
       }
 
-      toast.success("Faculty assignments updated successfully!");
+      toast.success("Teacher profile updated successfully!");
       onSaved?.();
       onOpenChange(false);
     } catch (err: any) {
@@ -269,40 +241,6 @@ export function SchoolEditTeacherDialog({
             </div>
           </div>
 
-          {/* Department & Primary Subject */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-dept" className="text-xs text-muted-foreground font-semibold">
-                Department
-              </Label>
-              <select
-                id="edit-dept"
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className="h-9 w-full rounded-lg border border-[#34415b] bg-background px-3 text-xs text-white"
-              >
-                {DEPARTMENTS.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-subject" className="text-xs text-muted-foreground font-semibold">
-                Primary Subject
-              </Label>
-              <Input
-                id="edit-subject"
-                value={primarySubject}
-                onChange={(e) => setPrimarySubject(e.target.value)}
-                placeholder="e.g. Mathematics, English"
-                className="border-[#34415b] bg-background text-white text-xs h-9"
-              />
-            </div>
-          </div>
-
           {/* Status */}
           <div className="space-y-1.5">
             <Label htmlFor="edit-status" className="text-xs text-muted-foreground font-semibold">
@@ -320,35 +258,6 @@ export function SchoolEditTeacherDialog({
             </select>
           </div>
 
-          {/* Allocated Class Arms */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground font-semibold">
-              Assigned Class Arms ({selectedClassIds.length} allocated)
-            </Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-xl border border-[#233148] bg-background p-3 max-h-36 overflow-y-auto">
-              {classes.map((cls) => {
-                const isChecked = selectedClassIds.includes(cls.id);
-                return (
-                  <label
-                    key={cls.id}
-                    className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 cursor-pointer text-xs transition-colors ${
-                      isChecked
-                        ? "border-sky-500/40 bg-sky-500/10 text-white font-medium"
-                        : "border-border bg-card text-muted-foreground hover:text-white"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleClassSelect(cls.id)}
-                      className="h-3.5 w-3.5 rounded accent-sky-400 cursor-pointer"
-                    />
-                    <span className="truncate">{cls.name}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
           {/* Teacher Login Access */}
           {!isVirtual && (
             <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-3">

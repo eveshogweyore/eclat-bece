@@ -45,10 +45,7 @@ export interface TeacherDataset {
     id: string;
     fullName: string;
     email: string | null;
-    department: string | null;
-    primarySubject: string | null;
     status: string;
-    assignedClassIds: string[];
   };
   schoolName: string | null;
   classes: TeacherClass[];
@@ -60,20 +57,16 @@ async function fetchTeacherDataset(userId: string): Promise<TeacherDataset> {
   // 1. Own registry row (RLS: teachers read their own record)
   const { data: teacher, error: teacherErr } = await supabase
     .from("school_teachers")
-    .select("id, full_name, email, department, primary_subject, status, assigned_class_ids, school_id")
+    .select("id, full_name, email, status, school_id")
     .eq("user_id", userId)
     .maybeSingle();
   if (teacherErr) throw teacherErr;
   if (!teacher) throw new Error("Teacher record not found. Contact your school administrator.");
 
-  const assignedClassIds = (teacher.assigned_class_ids || []) as string[];
-
-  // 2. School name + allocated classes (RLS: teacher views own school's classes)
+  // 2. School name + all of the school's classes (RLS: school-scoped)
   const [schoolRes, classesRes] = await Promise.all([
     supabase.from("schools").select("school_name").eq("id", teacher.school_id).maybeSingle(),
-    assignedClassIds.length > 0
-      ? supabase.from("school_classes").select("id, name, level, class_year").in("id", assignedClassIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; name: string; level: string; class_year: string | null }>, error: null as unknown }),
+    supabase.from("school_classes").select("id, name, level, class_year").eq("school_id", teacher.school_id),
   ]);
   if (schoolRes.error) throw schoolRes.error;
   if (classesRes.error) throw classesRes.error;
@@ -81,42 +74,11 @@ async function fetchTeacherDataset(userId: string): Promise<TeacherDataset> {
   const classes = (classesRes.data || []) as Array<{ id: string; name: string; level: string; class_year: string | null }>;
   const classNames = new Map(classes.map((c) => [c.id, c.name]));
 
-  // 3. Students in the allocated classes (RLS: class-scoped). Cohort fallback
-  //    mirrors the school portal: students without a class in an allocated
-  //    class_year are included.
-  const allocatedYears = [...new Set(classes.map((c) => c.class_year).filter(Boolean))] as string[];
-  let studentsQuery = supabase
+  // 3. All students of the teacher's school (RLS: school-scoped)
+  const studentsRes = await supabase
     .from("students")
     .select("id, user_id, class_id, class_year, is_premium, profile:profiles(full_name, username)")
     .eq("school_id", teacher.school_id);
-  if (assignedClassIds.length > 0) {
-    studentsQuery = studentsQuery.in("class_id", assignedClassIds);
-    if (allocatedYears.length > 0) {
-      studentsQuery = studentsQuery.or(
-        `class_id.in.(${assignedClassIds.join(",")}),class_year.in.(${allocatedYears.join(",")})`
-      );
-    }
-  } else {
-    // No allocation — nothing to show rather than the whole school.
-    return {
-      teacher: {
-        id: teacher.id,
-        fullName: teacher.full_name,
-        email: teacher.email,
-        department: teacher.department,
-        primarySubject: teacher.primary_subject,
-        status: teacher.status,
-        assignedClassIds: [],
-      },
-      schoolId: teacher.school_id as string | null,
-      schoolName: schoolRes.data?.school_name || null,
-      classes: [],
-      students: [],
-      assignments: [],
-    };
-  }
-
-  const studentsRes = await studentsQuery;
   if (studentsRes.error) throw studentsRes.error;
 
   type RawStudent = {
@@ -129,7 +91,7 @@ async function fetchTeacherDataset(userId: string): Promise<TeacherDataset> {
   };
   const rawStudents = (studentsRes.data || []) as unknown as RawStudent[];
 
-  // 4. Results + assignments scoped to those students (RLS: class-scoped)
+  // 4. Results + assignments scoped to those students (RLS: school-scoped)
   const studentIds = rawStudents.map((s) => s.id);
   const [resultsRes, assignmentsRes] = await Promise.all([
     studentIds.length > 0
@@ -192,10 +154,7 @@ async function fetchTeacherDataset(userId: string): Promise<TeacherDataset> {
       id: teacher.id,
       fullName: teacher.full_name,
       email: teacher.email,
-      department: teacher.department,
-      primarySubject: teacher.primary_subject,
       status: teacher.status,
-      assignedClassIds,
     },
     schoolName: schoolRes.data?.school_name || null,
     classes,

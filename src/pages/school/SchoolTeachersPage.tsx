@@ -18,37 +18,20 @@ const teacherLoginTone = (teacher: unknown) => {
 export function SchoolTeachersPage() {
   const { school, teachers, classes, refresh, isLoading, error } = useSchoolData();
   const [search, setSearch] = useState("");
-  const [deptFilter, setDeptFilter] = useState("all");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedEditTeacher, setSelectedEditTeacher] = useState<SchoolTeacherItem | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-
-  // Derive unique departments for filtering
-  const departments = useMemo(() => {
-    const set = new Set<string>();
-    teachers.forEach((t) => {
-      if (t.department) set.add(t.department);
-    });
-    return Array.from(set);
-  }, [teachers]);
 
   const filteredTeachers = useMemo(() => {
     return teachers.filter((t) => {
       const q = search.toLowerCase();
       const matchesSearch =
         t.full_name.toLowerCase().includes(q) ||
-        (t.email && t.email.toLowerCase().includes(q)) ||
-        (t.department && t.department.toLowerCase().includes(q)) ||
-        (t.primary_subject && t.primary_subject.toLowerCase().includes(q)) ||
-        t.assigned_classes.some((c) => c.toLowerCase().includes(q));
+        (t.email && t.email.toLowerCase().includes(q));
 
-      const matchesDept =
-        deptFilter === "all" ||
-        (t.department && t.department.toLowerCase() === deptFilter.toLowerCase());
-
-      return matchesSearch && matchesDept;
+      return matchesSearch;
     });
-  }, [teachers, search, deptFilter]);
+  }, [teachers, search]);
 
   if (isLoading) {
     return <SchoolDataState loading />;
@@ -61,7 +44,7 @@ export function SchoolTeachersPage() {
     <>
       <SchoolPageHeader
         title="Teacher Directory"
-        subtitle="Manage faculty assignments, department allocations, and lead instructors."
+        subtitle="Register teachers, manage their details, and create their portal logins."
         actions={
           <Button
             onClick={() => setAddDialogOpen(true)}
@@ -79,28 +62,10 @@ export function SchoolTeachersPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search teachers by name, subject, department, or class arm..."
+            placeholder="Search teachers by name or email..."
             className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
         </div>
-
-        {departments.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-muted-foreground flex-shrink-0">Department:</span>
-            <select
-              value={deptFilter}
-              onChange={(e) => setDeptFilter(e.target.value)}
-              className="h-9 rounded-lg border border-border bg-card px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
-            >
-              <option value="all">All Departments ({teachers.length})</option>
-              {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
       {/* Faculty List / Empty State */}
@@ -113,7 +78,7 @@ export function SchoolTeachersPage() {
             <div>
               <h3 className="text-lg font-bold text-foreground">No Faculty Members Registered</h3>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Add faculty members to assign departments, allocate subject duties, and appoint lead teachers across class arms.
+                Add faculty members and create their portal logins.
               </p>
             </div>
             <Button
@@ -140,7 +105,6 @@ export function SchoolTeachersPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <h3 className="font-bold text-foreground text-base truncate">{teacher.full_name}</h3>
-                    <p className="text-xs text-primary font-semibold truncate">{teacher.department || "Faculty Member"}</p>
                   </div>
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold border flex-shrink-0 ${
@@ -170,14 +134,6 @@ export function SchoolTeachersPage() {
                   </span>
                 </div>
 
-                {/* Primary Subject */}
-                {teacher.primary_subject && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <BookOpen className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                    <span>Specialization: <strong className="text-foreground">{teacher.primary_subject}</strong></span>
-                  </div>
-                )}
-
                 {/* Contact info if provided */}
                 <div className="space-y-1 text-xs text-muted-foreground border-t border-border/60 pt-2">
                   {teacher.email && (
@@ -194,31 +150,6 @@ export function SchoolTeachersPage() {
                   )}
                 </div>
 
-                {/* Assigned Class Arms */}
-                <div className="space-y-1.5 pt-2 border-t border-border/60 text-xs">
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium">
-                    <span>Allocated Class Arms:</span>
-                    <span className="text-primary font-semibold">
-                      {teacher.assigned_classes.length} {teacher.assigned_classes.length === 1 ? "Class" : "Classes"}
-                    </span>
-                  </div>
-                  {teacher.assigned_classes.length === 0 ? (
-                    <p className="text-[11px] text-muted-foreground italic">No class arms currently assigned.</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {teacher.assigned_classes.map((clsName) => (
-                        <span
-                          key={clsName}
-                          className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/60 px-2 py-0.5 text-[10px] text-foreground"
-                        >
-                          <Building2 className="h-2.5 w-2.5 text-primary" />
-                          {clsName}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
                 {/* Action Trigger */}
                 <div className="pt-2 border-t border-border/60 flex justify-end">
                   <Button
@@ -231,7 +162,7 @@ export function SchoolTeachersPage() {
                     className="h-7 px-2.5 border-border bg-card text-xs text-foreground hover:bg-accent hover:border-primary/50"
                   >
                     <Edit2 className="mr-1 h-3 w-3" />
-                    Edit & Allocate
+                    Edit Teacher
                   </Button>
                 </div>
               </CardContent>
@@ -246,7 +177,6 @@ export function SchoolTeachersPage() {
           open={addDialogOpen}
           onOpenChange={setAddDialogOpen}
           schoolId={school.id}
-          classes={classes}
           onCreated={() => refresh()}
         />
       )}
@@ -257,7 +187,7 @@ export function SchoolTeachersPage() {
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
           teacher={selectedEditTeacher}
-          classes={classes}
+          classes={classes.map((cls) => ({ id: cls.id, lead_teacher: cls.lead_teacher }))}
           schoolId={school.id}
           onSaved={() => refresh()}
         />

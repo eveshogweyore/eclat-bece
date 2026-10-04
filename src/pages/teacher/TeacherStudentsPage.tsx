@@ -11,7 +11,6 @@ import { useTeacherData, TeacherStudent } from "@/hooks/useTeacherData";
 export default function TeacherStudentsPage() {
   const { teacher, schoolId, students, isLoading, error, refresh } = useTeacherData();
   const [search, setSearch] = useState("");
-  const [classFilter, setClassFilter] = useState("all");
   const [selectedReportStudent, setSelectedReportStudent] = useState<TeacherStudent | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -22,10 +21,9 @@ export default function TeacherStudentsPage() {
     return students.filter((s) => {
       const matchesSearch =
         s.name.toLowerCase().includes(q) || (s.username && s.username.toLowerCase().includes(q));
-      const matchesClass = classFilter === "all" || s.class_id === classFilter;
-      return matchesSearch && matchesClass;
+      return matchesSearch;
     });
-  }, [students, search, classFilter]);
+  }, [students, search]);
 
   if (isLoading) {
     return <PortalDataState loading />;
@@ -38,7 +36,7 @@ export default function TeacherStudentsPage() {
     <div className="space-y-6">
       <SchoolPageHeader
         title="My Students"
-        subtitle="Students in your allocated class arms, with their practice performance."
+        subtitle="Students enrolled at your school, with their practice performance."
         actions={
           <Button
             onClick={() => {
@@ -62,26 +60,12 @@ export default function TeacherStudentsPage() {
               className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
-          <select
-            value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value)}
-            className="rounded-lg border border-border bg-card px-3 py-2 text-xs focus:outline-none"
-          >
-            <option value="all">All my classes</option>
-            {[...new Map(students.map((s) => [s.class_id, s.class_name])).entries()].map(
-              ([id, name]) => (
-                <option key={id} value={id}>
-                  {name}
-                </option>
-              )
-            )}
-          </select>
         </div>
 
         {students.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <Users className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="font-semibold">No students in your allocated classes yet</p>
+            <p className="font-semibold">No students enrolled yet</p>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
               Students appear here once your school enrolls them into one of your allocated class arms.
             </p>
