@@ -43,7 +43,7 @@ serve(async (req) => {
       return json({ error: "Invalid token" }, 401);
     }
 
-    const { studentId, action, fullName, password, username } = await req.json();
+    const { studentId, action, fullName, password, username, classYear, classId } = await req.json();
 
     if (!studentId || !action) {
       return json({ error: "Missing studentId or action" }, 400);
@@ -51,19 +51,27 @@ serve(async (req) => {
 
     const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+    // Caller is authorized as: the student's parent, OR the school that owns
+    // the student (schools.user_id = caller).
     const { data: parentRecord, error: parentError } = await adminClient
       .from("parents")
       .select("id")
       .eq("user_id", userData.user.id)
-      .single();
+      .maybeSingle();
 
-    if (parentError || !parentRecord) {
-      return json({ error: "Only parents can manage student accounts" }, 403);
+    const { data: schoolRecord, error: schoolError } = await adminClient
+      .from("schools")
+      .select("id")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+
+    if (!parentRecord && !schoolRecord) {
+      return json({ error: "Only parents or schools can manage student accounts" }, 403);
     }
 
     const { data: studentRecord, error: studentError } = await adminClient
       .from("students")
-      .select("id, user_id, parent_id, is_premium")
+      .select("id, user_id, parent_id, school_id, is_premium")
       .eq("id", studentId)
       .single();
 
@@ -71,8 +79,11 @@ serve(async (req) => {
       return json({ error: "Student not found" }, 404);
     }
 
-    if (studentRecord.parent_id !== parentRecord.id) {
-      return json({ error: "Access denied: You are not this student's parent" }, 403);
+    const isParentCaller = !!parentRecord && studentRecord.parent_id === parentRecord.id;
+    const isSchoolCaller = !!schoolRecord && studentRecord.school_id === schoolRecord.id;
+
+    if (!isParentCaller && !isSchoolCaller) {
+      return json({ error: "Access denied: This student is not linked to your account" }, 403);
     }
 
     const studentUserId = studentRecord.user_id;
@@ -92,7 +103,7 @@ serve(async (req) => {
 
       const { error: authError } = await adminClient.auth.admin.updateUserById(
         studentUserId,
-        { user_metadata: { full_name: cleanFullName, role: "student", provisioned_by: "parent" } },
+        { user_metadata: { full_name: cleanFullName, role: "student", provisioned_by: isSchoolCaller ? "school" : "parent" } },
       );
 
       if (authError) {
@@ -116,6 +127,36 @@ serve(async (req) => {
       if (authError) throw authError;
 
       return json({ success: true, message: "Password updated successfully" });
+    }
+
+    if (action === "set-class") {
+      // Schools only: place the student into a class arm of their own school.
+      if (!isSchoolCaller) {
+        return json({ error: "Only schools can change a student's class placement" }, 403);
+      }
+      const cleanClassYear = typeof classYear === "string" ? classYear.trim() : "";
+      const cleanClassId = typeof classId === "string" && classId.trim() ? classId.trim() : null;
+      if (!["year_6", "year_9"].includes(cleanClassYear)) {
+        return json({ error: "Invalid cohort" }, 400);
+      }
+      if (cleanClassId) {
+        const { data: classRow, error: classErr } = await adminClient
+          .from("school_classes")
+          .select("id")
+          .eq("id", cleanClassId)
+          .eq("school_id", schoolRecord.id)
+          .maybeSingle();
+        if (classErr) throw classErr;
+        if (!classRow) {
+          return json({ error: "Class not found in your school" }, 400);
+        }
+      }
+      const { error: updateErr } = await adminClient
+        .from("students")
+        .update({ class_year: cleanClassYear, class_id: cleanClassId })
+        .eq("id", studentRecord.id);
+      if (updateErr) throw updateErr;
+      return json({ success: true, message: "Class placement updated" });
     }
 
     if (action === "edit-username") {
@@ -191,7 +232,7 @@ serve(async (req) => {
             expires_at: expiresAt,
             metadata: {
               source: "dummy_payment",
-              processed_by_parent_user_id: userData.user.id,
+              processed_by_user_id: userData.user.id,
             },
           })
           .eq("id", existingSubscription.id);
@@ -201,7 +242,7 @@ serve(async (req) => {
         const { error: insertSubscriptionError } = await adminClient
           .from("subscriptions")
           .insert({
-            parent_id: parentRecord.id,
+            parent_id: parentRecord?.id ?? null,
             student_id: studentRecord.id,
             plan: "premium_annual",
             status: "active",
@@ -211,7 +252,7 @@ serve(async (req) => {
             expires_at: expiresAt,
             metadata: {
               source: "dummy_payment",
-              processed_by_parent_user_id: userData.user.id,
+              processed_by_user_id: userData.user.id,
             },
           });
 

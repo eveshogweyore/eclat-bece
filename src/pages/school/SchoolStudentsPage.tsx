@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Users, Search, Plus, BookOpen, FileText, Sparkles, Trophy, Upload } from "lucide-react";
+import { Users, Search, Plus, BookOpen, FileText, Trophy, Upload, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
@@ -7,6 +7,7 @@ import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { CreateStudentDialog } from "@/components/school/SchoolCreateDialogs";
 import { SchoolBulkStudentDialog } from "@/components/school/SchoolBulkStudentDialog";
 import { StudentReportDialog } from "@/components/StudentReportDialog";
+import { StudentEditDialog } from "@/components/school/StudentEditDialog";
 import { SchoolAssignPracticeDialog } from "@/components/school/SchoolAssignPracticeDialog";
 import { useSchoolData, SchoolStudent } from "@/hooks/useSchoolData";
 
@@ -23,6 +24,9 @@ export function SchoolStudentsPage() {
 
   const [selectedAssignStudent, setSelectedAssignStudent] = useState<SchoolStudent | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
+
+  const [selectedEditStudent, setSelectedEditStudent] = useState<SchoolStudent | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const { school, students, classes, gamificationTotals, refresh, isLoading, error } = useSchoolData();
 
@@ -241,6 +245,19 @@ export function SchoolStudentsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label={`Edit student ${student.name}`}
+                        onClick={() => {
+                          setSelectedEditStudent(student);
+                          setEditOpen(true);
+                        }}
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                        title="Edit student"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => {
                           setSelectedReportStudent(student);
                           setReportOpen(true);
@@ -348,6 +365,18 @@ export function SchoolStudentsPage() {
           }}
         />
       )}
+
+      {/* Edit Student Dialog */}
+      <StudentEditDialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open);
+          if (!open) setSelectedEditStudent(null);
+        }}
+        student={selectedEditStudent}
+        classes={classes.map((cls) => ({ id: cls.id, name: cls.name, class_year: cls.class_year }))}
+        onSaved={() => refresh()}
+      />
     </>
   );
 }
