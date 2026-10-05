@@ -268,6 +268,11 @@ export default function StudentDashboardOverview() {
     if (stats?.pinnedBadgeIds) setPinnedBadgeIds(stats.pinnedBadgeIds);
   }, [stats?.pinnedBadgeIds]);
 
+  // Level-gated showcase slots (levelEngine milestones: slot #1 at level 3,
+  // slot #2 at level 5, full 5-slot showcase at level 10).
+  const unlockedSlotsCount =
+    levelInfo.level >= 10 ? 5 : levelInfo.level >= 5 ? 2 : levelInfo.level >= 3 ? 1 : 0;
+
 
   const featureCards = [
     {
@@ -604,6 +609,7 @@ export default function StudentDashboardOverview() {
           earnedBadgeIds={earnedBadgeIds}
           pinnedBadgeIds={pinnedBadgeIds}
           onUpdatePinnedBadges={handleUpdatePinnedBadges}
+          unlockedSlotsCount={unlockedSlotsCount}
           currentStreak={currentStreak}
           completedQuizzesCount={completedQuizzesCount}
           averageScore={averageScore}
