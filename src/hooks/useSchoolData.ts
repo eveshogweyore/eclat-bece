@@ -84,6 +84,7 @@ export interface SchoolExamItem {
 export interface SchoolTeacherItem {
   id: string;
   school_id: string;
+  user_id?: string | null;
   full_name: string;
   email: string | null;
   phone: string | null;
@@ -170,7 +171,7 @@ async function fetchSchoolDataset(): Promise<SchoolDataset> {
       .order("exam_date", { ascending: true }),
     supabase
       .from("school_teachers")
-      .select("id, school_id, full_name, email, phone, department, primary_subject, assigned_class_ids, status, created_at")
+      .select("id, school_id, user_id, full_name, email, phone, department, primary_subject, assigned_class_ids, status, created_at")
       .eq("school_id", currentSchool.id)
       .order("full_name", { ascending: true }),
   ]);
@@ -399,6 +400,7 @@ async function fetchSchoolDataset(): Promise<SchoolDataset> {
     return {
       id: t.id,
       school_id: t.school_id,
+      user_id: t.user_id || null,
       full_name: t.full_name,
       email: t.email || null,
       phone: t.phone || null,

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Briefcase, Search, Plus, Mail, Phone, Users, Building2, BookOpen, Edit2, ShieldCheck } from "lucide-react";
+import { Search, Plus, Mail, Phone, Users, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
@@ -7,6 +7,9 @@ import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { SchoolAddTeacherDialog } from "@/components/school/SchoolAddTeacherDialog";
 import { SchoolEditTeacherDialog } from "@/components/school/SchoolEditTeacherDialog";
 import { useSchoolData, SchoolTeacherItem } from "@/hooks/useSchoolData";
+import { SchoolConfirmDialog } from "@/components/school/SchoolConfirmDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const teacherLoginTone = (teacher: unknown) => {
   const linked = (teacher as { user_id?: string | null }).user_id;
@@ -21,6 +24,54 @@ export function SchoolTeachersPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedEditTeacher, setSelectedEditTeacher] = useState<SchoolTeacherItem | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SchoolTeacherItem | null>(null);
+
+  const confirmDeleteTeacher = async () => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    setIsDeleting(target.id);
+    try {
+      // If the teacher has a portal login, revoke it first (removes the auth
+      // user; school_teachers.user_id is SET NULL by its FK).
+      if (target.user_id) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const { error: revokeErr } = await supabase.functions.invoke("create-teacher-account", {
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : undefined,
+          body: { action: "revoke-login", teacher_id: target.id },
+        });
+        if (revokeErr) throw revokeErr;
+      }
+
+      const { error } = await supabase
+        .from("school_teachers")
+        .delete()
+        .eq("id", target.id);
+      if (error) throw error;
+
+      // Clear lead_teacher on classes led by this name, or the deleted
+      // teacher respawns as a virtual ghost.
+      for (const cls of classes) {
+        if (cls.lead_teacher && cls.lead_teacher.trim().toLowerCase() === target.full_name.trim().toLowerCase()) {
+          await supabase
+            .from("school_classes")
+            .update({ lead_teacher: null })
+            .eq("id", cls.id);
+        }
+      }
+
+      toast.success(`Teacher "${target.full_name}" removed from the directory`);
+      refresh();
+    } catch (err: any) {
+      console.error("Error deleting teacher:", err);
+      toast.error(err.message || "Failed to delete teacher");
+    } finally {
+      setIsDeleting(null);
+    }
+  };
 
   const filteredTeachers = useMemo(() => {
     return teachers.filter((t) => {
@@ -151,7 +202,18 @@ export function SchoolTeachersPage() {
                 </div>
 
                 {/* Action Trigger */}
-                <div className="pt-2 border-t border-border/60 flex justify-end">
+                <div className="pt-2 border-t border-border/60 flex items-center justify-between">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Delete teacher ${teacher.full_name}`}
+                    onClick={() => setDeleteTarget(teacher)}
+                    disabled={isDeleting === teacher.id}
+                    className="h-7 px-2 text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="mr-1 h-3 w-3" aria-hidden="true" />
+                    Delete
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -171,6 +233,14 @@ export function SchoolTeachersPage() {
         </div>
       )}
 
+      {/* Delete Teacher Confirmation */}
+      <SchoolConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={`Delete teacher "${deleteTarget?.full_name}"?`}
+        description="The teacher will be removed from the directory and their portal login revoked. This action cannot be undone."
+        onConfirm={confirmDeleteTeacher}
+      />
       {/* Add Teacher Dialog */}
       {school?.id && (
         <SchoolAddTeacherDialog

@@ -90,6 +90,18 @@ serve(async (req) => {
       return json({ success: true, message: "Teacher password updated" });
     }
 
+    if (action === "revoke-login") {
+      // Remove the teacher's login account entirely. auth.users deletion
+      // cascades user_roles/profiles; school_teachers.user_id is SET NULL by
+      // its FK, so the registry row survives without a login.
+      if (!teacherRow.user_id) {
+        return json({ error: "This teacher has no login account" }, 400);
+      }
+      const { error: deleteErr } = await adminClient.auth.admin.deleteUser(teacherRow.user_id);
+      if (deleteErr) throw deleteErr;
+      return json({ success: true, message: "Teacher login revoked" });
+    }
+
     // Default action: create-and-link a new login account.
     if (teacherRow.user_id) {
       return json({ error: "This teacher already has a login account" }, 409);
