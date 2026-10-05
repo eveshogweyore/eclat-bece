@@ -29,6 +29,8 @@ dist-ssr
 supabase/.branches
 supabase/.temp
 
+# TypeScript incremental build cache
+*.tsbuildinfo
 
 # ZCode session artifacts
 .zcode/
