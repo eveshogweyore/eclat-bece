@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
-import { Building2, Plus, Search, Trash2, Loader2 } from "lucide-react";
+import { Building2, Plus, Search, Trash2, Loader2, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
 import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { SchoolConfirmDialog } from "@/components/school/SchoolConfirmDialog";
 import { CreateClassDialog } from "@/components/school/SchoolCreateDialogs";
-import { useSchoolData } from "@/hooks/useSchoolData";
+import { useSchoolData, SchoolClassItem } from "@/hooks/useSchoolData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -22,6 +22,7 @@ export function SchoolClassesPage() {
   const [levelFilter, setLevelFilter] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [editTarget, setEditTarget] = useState<SchoolClassItem | null>(null);
 
   const confirmDeleteClass = () => {
     if (!deleteTarget) return;
@@ -84,7 +85,7 @@ export function SchoolClassesPage() {
         subtitle="Manage examination cohorts, class streams, and assigned faculty."
         actions={
           <Button
-            onClick={() => setClassDialogOpen(true)}
+            onClick={() => { setEditTarget(null); setClassDialogOpen(true); }}
             className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs sm:text-sm shadow-sm"
           >
             <Plus className="mr-1.5 h-4 w-4" />
@@ -157,7 +158,7 @@ export function SchoolClassesPage() {
               </p>
             </div>
             <Button
-              onClick={() => setClassDialogOpen(true)}
+              onClick={() => { setEditTarget(null); setClassDialogOpen(true); }}
               className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold"
             >
               <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -202,16 +203,27 @@ export function SchoolClassesPage() {
                   <span className="text-[11px] text-muted-foreground">
                     Level: {klass.level}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={deletingId === klass.id}
-                    aria-label={`Delete class ${klass.name}`}
-                    onClick={() => setDeleteTarget({ id: klass.id, name: klass.name })}
-                    className="h-7 px-2 text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Edit class ${klass.name}`}
+                      onClick={() => { setEditTarget(klass); setClassDialogOpen(true); }}
+                      className="h-7 px-2 text-muted-foreground hover:bg-muted"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={deletingId === klass.id}
+                      aria-label={`Delete class ${klass.name}`}
+                      onClick={() => setDeleteTarget({ id: klass.id, name: klass.name })}
+                      className="h-7 px-2 text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -221,6 +233,7 @@ export function SchoolClassesPage() {
 
       <CreateClassDialog
         teachers={registeredTeachers}
+        editClass={editTarget}
         open={classDialogOpen}
         onOpenChange={setClassDialogOpen}
         onCreated={refreshSchoolData}

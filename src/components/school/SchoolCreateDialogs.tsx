@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,20 +13,42 @@ interface CreateClassDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Registered teachers of the school, for the Lead teacher dropdown. */
   teachers?: Array<{ id: string; full_name: string }>;
+  /** When set, the dialog edits this existing class instead of creating. */
+  editClass?: { id: string; name: string; level: string; lead_teacher: string | null } | null;
   onCreated?: () => void;
 }
 
-const LEVELS = ["Primary 6", "JSS 3"] as const;
 const LEVEL_TO_CLASS_YEAR: Record<string, "year_6" | "year_9"> = {
   "Primary 6": "year_6",
   "JSS 3": "year_9",
 };
 
-export function CreateClassDialog({ open, onOpenChange, teachers = [], onCreated }: CreateClassDialogProps) {
+export function CreateClassDialog({
+  open,
+  onOpenChange,
+  teachers = [],
+  editClass,
+  onCreated,
+}: CreateClassDialogProps) {
+  const isEdit = !!editClass;
   const [name, setName] = useState("");
-  const [level, setLevel] = useState<string>("JSS 3");
+  const [level, setLevel] = useState("JSS 3");
   const [teacher, setTeacher] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Hydrate from the class being edited.
+  useEffect(() => {
+    if (open && editClass) {
+      setName(editClass.name);
+      setLevel(LEVEL_TO_CLASS_YEAR[editClass.level] ? editClass.level : "JSS 3");
+      setTeacher(editClass.lead_teacher || "");
+    }
+    if (!open) {
+      setName("");
+      setLevel("JSS 3");
+      setTeacher("");
+    }
+  }, [open, editClass]);
 
   const close = () => {
     setName("");
@@ -35,7 +57,7 @@ export function CreateClassDialog({ open, onOpenChange, teachers = [], onCreated
     onOpenChange(false);
   };
 
-  const createClass = async () => {
+  const saveClass = async () => {
     if (!name.trim() || !level.trim()) {
       toast.error("Class name and level are required");
       return;
@@ -43,34 +65,58 @@ export function CreateClassDialog({ open, onOpenChange, teachers = [], onCreated
 
     setIsSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Your session has expired");
-
-      const { data: school, error: schoolError } = await supabase
-        .from("schools")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-      if (schoolError || !school) throw schoolError || new Error("School profile not found");
-
-      // Explicit cohort map: only the two supported levels exist.
       const classYear = LEVEL_TO_CLASS_YEAR[level];
 
-      const { error } = await supabase.from("school_classes").insert({
-        school_id: school.id,
-        name: name.trim(),
-        level: level.trim(),
-        class_year: classYear,
-        lead_teacher: teacher.trim() || null,
-      });
-      if (error) throw error;
+      if (isEdit && editClass) {
+        // Rename / re-cohort / reassign lead. Enrolled students' class_year
+        // follows the class so the class arm stays a single cohort.
+        const { error: updateError } = await supabase
+          .from("school_classes")
+          .update({
+            name: name.trim(),
+            level: level.trim(),
+            class_year: classYear,
+            lead_teacher: teacher.trim() || null,
+          })
+          .eq("id", editClass.id);
+        if (updateError) throw updateError;
 
-      toast.success("Class created successfully");
+        if (editClass.level !== level) {
+          const { error: studentsError } = await supabase
+            .from("students")
+            .update({ class_year: classYear })
+            .eq("class_id", editClass.id);
+          if (studentsError) throw studentsError;
+        }
+
+        toast.success("Class updated successfully");
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Your session has expired");
+
+        const { data: school, error: schoolError } = await supabase
+          .from("schools")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+        if (schoolError || !school) throw schoolError || new Error("School profile not found");
+
+        const { error } = await supabase.from("school_classes").insert({
+          school_id: school.id,
+          name: name.trim(),
+          level: level.trim(),
+          class_year: classYear,
+          lead_teacher: teacher.trim() || null,
+        });
+        if (error) throw error;
+
+        toast.success("Class created successfully");
+      }
       onCreated?.();
       close();
     } catch (error) {
-      console.error("Error creating class:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to create class");
+      console.error("Error saving class:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save class");
     } finally {
       setIsSaving(false);
     }
@@ -80,15 +126,19 @@ export function CreateClassDialog({ open, onOpenChange, teachers = [], onCreated
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="border-border bg-muted/40 text-foreground w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-xl text-white">Create new class</DialogTitle>
-          <DialogDescription className="text-muted-foreground">Add a class to your school directory and assign its lead teacher.</DialogDescription>
+          <DialogTitle className="text-xl text-white">{isEdit ? "Edit class" : "Create new class"}</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            {isEdit
+              ? "Update the class name, cohort, or lead teacher."
+              : "Add a class to your school directory and assign its lead teacher."}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-3">
           <div className="space-y-2"><Label htmlFor="class-name">Class name</Label><Input id="class-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. JSS 3A" className="border-[#34415b] bg-[#0f182b] text-white" /></div>
           <div className="space-y-2"><Label htmlFor="class-level">Level</Label><select id="class-level" value={level} onChange={(event) => setLevel(event.target.value)} className="h-10 w-full rounded-md border border-[#34415b] bg-[#0f182b] px-3 text-sm text-white"><option value="Primary 6">Primary 6 (Common Entrance)</option><option value="JSS 3">JSS 3 (BECE)</option></select></div>
           <div className="space-y-2"><Label htmlFor="lead-teacher">Lead teacher <span className="text-slate-500">(optional)</span></Label><select id="lead-teacher" value={teacher} onChange={(event) => setTeacher(event.target.value)} className="h-10 w-full rounded-md border border-[#34415b] bg-[#0f182b] px-3 text-sm text-white"><option value="">Unassigned</option>{teachers.map((t) => (<option key={t.id} value={t.full_name}>{t.full_name}</option>))}</select></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={close} className="border-[#34415b] text-slate-200">Cancel</Button><Button onClick={createClass} disabled={isSaving} className="bg-[#2184a7] text-white hover:bg-[#2c9bc2]">{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create class</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={close} className="border-[#34415b] text-slate-200">Cancel</Button><Button onClick={saveClass} disabled={isSaving} className="bg-[#2184a7] text-white hover:bg-[#2c9bc2]">{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isEdit ? "Save changes" : "Create class"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
