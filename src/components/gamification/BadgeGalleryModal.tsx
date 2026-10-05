@@ -28,7 +28,8 @@ interface BadgeGalleryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   earnedBadgeIds: string[];
-  pinnedBadgeIds: string[];
+  // NULL entries are empty showcase slots (positions preserved).
+  pinnedBadgeIds: (string | null)[];
   onTogglePinBadge?: (badgeId: string) => Promise<void>;
   currentStreak?: number;
   completedQuizzesCount?: number;

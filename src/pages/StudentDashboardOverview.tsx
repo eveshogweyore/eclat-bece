@@ -165,7 +165,7 @@ export default function StudentDashboardOverview() {
       const levelInfo = calculateStudentLevel(Number(gameProfile?.lifetime_ep || 0));
       const streakShields = Number(gameProfile?.streak_shields || 0);
       const currentLeagueTier = Number(gameProfile?.current_league_tier || 1);
-      const pinnedBadgeIds = (gameProfile?.pinned_badge_ids as string[]) || [];
+      const pinnedBadgeIds = (gameProfile?.pinned_badge_ids as (string | null)[]) || [];
       const earnedBadgeIds = (badgesRes.data || []).map((b) => b.badge_id);
       const focusTopic = weakTopicsRes.data?.[0] ?? null;
       const pendingAssignmentsCount = pendingRes.count ?? 0;
@@ -262,7 +262,8 @@ export default function StudentDashboardOverview() {
   const badges = stats?.badges ?? [];
 
   // Pinned badges are editable locally; seeded from the cached stats query.
-  const [pinnedBadgeIds, setPinnedBadgeIds] = useState<string[]>([]);
+  // NULL entries are empty showcase slots (positions preserved).
+  const [pinnedBadgeIds, setPinnedBadgeIds] = useState<(string | null)[]>([]);
   useEffect(() => {
     if (stats?.pinnedBadgeIds) setPinnedBadgeIds(stats.pinnedBadgeIds);
   }, [stats?.pinnedBadgeIds]);
@@ -329,27 +330,36 @@ export default function StudentDashboardOverview() {
   };
 
   const pinBadgesMutation = useMutation({
-    mutationFn: async (newPinnedIds: string[]) => {
+    mutationFn: async (newPinnedIds: (string | null)[]) => {
       // Scoped RPC — the gamification profile is no longer client-writable.
+      // NULL entries are empty slots; the SQL text[] keeps slot positions.
       const { error } = await supabase.rpc("update_pinned_badges", {
-        p_badge_ids: newPinnedIds,
+        p_badge_ids: newPinnedIds as string[],
       });
       if (error) throw error;
       return newPinnedIds;
     },
-    onMutate: (newPinnedIds) => setPinnedBadgeIds(newPinnedIds),
+    onMutate: (newPinnedIds) => {
+      const previous = pinnedBadgeIds;
+      setPinnedBadgeIds(newPinnedIds);
+      return { previous };
+    },
     onSuccess: () => {
       toast.success("Badge showcase updated!");
       queryClient.invalidateQueries({ queryKey: ["student-dashboard", user?.id ?? "anon"] });
     },
-    onError: () => {
+    onError: (_error, _newPinnedIds, context) => {
+      // Undo the optimistic pin so the UI never shows an unsaved state.
+      if (context) setPinnedBadgeIds(context.previous);
       toast.error("Failed to update badge showcase");
     },
   });
 
-  const handleUpdatePinnedBadges = async (newPinnedIds: string[]) => {
-    if (!studentId) return;
-    pinBadgesMutation.mutate(newPinnedIds);
+  // Rejects on RPC failure so dialog/gallery callers can keep their UI state;
+  // the toast and optimistic rollback live in the mutation handlers above.
+  const handleUpdatePinnedBadges = (newPinnedIds: (string | null)[]) => {
+    if (!studentId) return Promise.resolve();
+    return pinBadgesMutation.mutateAsync(newPinnedIds).then(() => undefined);
   };
 
   return (

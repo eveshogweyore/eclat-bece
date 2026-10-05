@@ -9,8 +9,10 @@ import { toast } from "sonner";
 
 interface BadgeShowcaseProps {
   earnedBadgeIds: string[];
-  pinnedBadgeIds: string[];
-  onUpdatePinnedBadges: (newPinnedIds: string[]) => Promise<void>;
+  // NULL entries are empty slots; positions are preserved so a pin stays in
+  // the slot it was given ("Slot 4" means slot 4).
+  pinnedBadgeIds: (string | null)[];
+  onUpdatePinnedBadges: (newPinnedIds: (string | null)[]) => Promise<void>;
   unlockedSlotsCount?: number;
   currentStreak?: number;
   completedQuizzesCount?: number;
@@ -40,8 +42,18 @@ export function BadgeShowcase({
     return { index: i, isUnlocked, badge };
   });
 
-  const handleSlotClick = (index: number, isUnlocked: boolean) => {
-    if (!isUnlocked) return;
+  // Empty slots are stored as NULL entries so each pin keeps its position;
+  // only trailing empties are trimmed to keep the stored array tidy.
+  const trimTrailingEmptySlots = (ids: (string | null)[]) => {
+    const next = [...ids];
+    while (next.length > 0 && next[next.length - 1] == null) next.pop();
+    return next;
+  };
+
+  const handleSlotClick = (index: number, isUnlocked: boolean, hasBadge: boolean) => {
+    // Occupied slots stay clickable even when locked so legacy pins (from a
+    // higher-slot era or before level gating) can still be moved or cleared.
+    if (!isUnlocked && !hasBadge) return;
     setSelectedSlotIndex(index);
     setDialogOpen(true);
   };
@@ -51,9 +63,18 @@ export function BadgeShowcase({
     setSaving(true);
     try {
       const nextPinned = [...pinnedBadgeIds];
+      while (nextPinned.length < selectedSlotIndex) nextPinned.push(null);
+      // Pinning a badge that already sits in another slot moves it here.
+      const existingIndex = nextPinned.indexOf(badgeId);
+      if (existingIndex >= 0 && existingIndex !== selectedSlotIndex) {
+        nextPinned[existingIndex] = null;
+      }
       nextPinned[selectedSlotIndex] = badgeId;
-      await onUpdatePinnedBadges(nextPinned.filter(Boolean));
+      await onUpdatePinnedBadges(trimTrailingEmptySlots(nextPinned));
       setDialogOpen(false);
+    } catch {
+      // Failure already toasted and rolled back by the mutation handlers;
+      // keep the dialog open so the student can retry.
     } finally {
       setSaving(false);
     }
@@ -64,27 +85,36 @@ export function BadgeShowcase({
     setSaving(true);
     try {
       const nextPinned = [...pinnedBadgeIds];
-      nextPinned.splice(selectedSlotIndex, 1);
-      await onUpdatePinnedBadges(nextPinned.filter(Boolean));
+      nextPinned[selectedSlotIndex] = null;
+      await onUpdatePinnedBadges(trimTrailingEmptySlots(nextPinned));
       setDialogOpen(false);
+    } catch {
+      // Failure already toasted and rolled back by the mutation handlers;
+      // keep the dialog open so the student can retry.
     } finally {
       setSaving(false);
     }
   };
 
   const handleTogglePinBadge = async (badgeId: string) => {
-    if (pinnedBadgeIds.includes(badgeId)) {
-      const nextPinned = pinnedBadgeIds.filter((id) => id !== badgeId);
-      await onUpdatePinnedBadges(nextPinned);
-      toast.info("Badge unpinned from showcase.");
-    } else {
-      if (pinnedBadgeIds.length >= unlockedSlotsCount) {
-        toast.error(`Showcase is full (${unlockedSlotsCount} slots max). Unpin a badge first!`);
-        return;
+    try {
+      if (pinnedBadgeIds.includes(badgeId)) {
+        const nextPinned = pinnedBadgeIds.map((id) => (id === badgeId ? null : id));
+        await onUpdatePinnedBadges(trimTrailingEmptySlots(nextPinned));
+      } else {
+        const pinnedCount = pinnedBadgeIds.filter((id) => id != null).length;
+        if (pinnedCount >= unlockedSlotsCount) {
+          toast.error(`Showcase is full (${unlockedSlotsCount} slots max). Unpin a badge first!`);
+          return;
+        }
+        const nextPinned = [...pinnedBadgeIds];
+        const freeIndex = nextPinned.findIndex((id) => id == null);
+        if (freeIndex >= 0) nextPinned[freeIndex] = badgeId;
+        else nextPinned.push(badgeId);
+        await onUpdatePinnedBadges(nextPinned);
       }
-      const nextPinned = [...pinnedBadgeIds, badgeId];
-      await onUpdatePinnedBadges(nextPinned);
-      toast.success("Badge pinned to showcase! 🎉");
+    } catch {
+      // Failure already toasted and rolled back by the mutation handlers.
     }
   };
 
@@ -119,8 +149,8 @@ export function BadgeShowcase({
           <button
             key={index}
             type="button"
-            disabled={!isUnlocked}
-            onClick={() => handleSlotClick(index, isUnlocked)}
+            disabled={!isUnlocked && !badge}
+            onClick={() => handleSlotClick(index, isUnlocked, Boolean(badge))}
             className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-2 transition-all ${
               badge
                 ? "bg-[#183149] border-primary/50 hover:scale-105 shadow-md cursor-pointer"
