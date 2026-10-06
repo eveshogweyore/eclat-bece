@@ -171,7 +171,7 @@ export default function QuizPage() {
     }
     if (isDuel && duelId) {
       // Duels must never share a cache key with each other or with mixed
-      // practice â€” a shared key could restore one duel's session and submit
+      // practice — a shared key could restore one duel's session and submit
       // its answers to another duel.
       return `eclat_quiz_cache_${user.id}_duel_${duelId}`;
     }
@@ -467,7 +467,7 @@ export default function QuizPage() {
             ? "comprehension_passages_year6"
             : "comprehension_passages_year9";
 
-        // IDs only â€” correct answers must never reach the browser.
+        // IDs only — correct answers must never reach the browser.
         let idQuery = supabase.from(tableName).select("id");
 
         if (duelQuestionIds.length > 0) {
@@ -1091,7 +1091,7 @@ export default function QuizPage() {
                 variant={isPassed ? "default" : "secondary"}
                 className="text-sm sm:text-base font-semibold px-4 py-1 rounded-full shadow-sm"
               >
-                {isPassed ? "Passed! âœ¨" : "Keep Practicing"}
+                {isPassed ? "Passed! ✨" : "Keep Practicing"}
               </Badge>
               {assignmentDuration && (
                 <Badge
@@ -1120,7 +1120,7 @@ export default function QuizPage() {
                         : duelOutcome.matchResult.outcome === "draw"
                         ? "Arena Battle Tie! 🤝"
                         : "Arena Battle Concluded 🛡️"
-                      : "Duel Round Recorded! âš¡"}
+                      : "Duel Round Recorded! ⚡"}
                   </h3>
                   <p className="text-xs text-slate-300">
                     {duelOutcome.isMatchComplete && duelOutcome.matchResult
@@ -1137,13 +1137,13 @@ export default function QuizPage() {
                   onClick={() => navigate("/dashboard/student/duel-of-minds")}
                   className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs h-8"
                 >
-                  Return to Arena Hub â†’
+                  Return to Arena Hub →
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Ã‰clat Gamification Points Ledger */}
+          {/* Éclat Gamification Points Ledger */}
           {gamificationOutcome && (
             <div className="mb-6">
               <PointBreakdownLedger outcome={gamificationOutcome} />
@@ -1206,7 +1206,7 @@ export default function QuizPage() {
               <div className="rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-slate-900 to-amber-500/5 p-4 text-left">
                 <div className="flex items-center gap-2 mb-1.5">
                   <Flame className="h-5 w-5 text-amber-400" />
-                  <span className="text-sm font-bold text-amber-300">Daily Challenge Completed â€¢ Single Attempt Locked</span>
+                  <span className="text-sm font-bold text-amber-300">Daily Challenge Completed • Single Attempt Locked</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   Congratulations on finishing today&apos;s sprint! Daily challenges can only be attempted once per calendar day to maintain fair competitive standards and league rankings.
@@ -1503,7 +1503,7 @@ export default function QuizPage() {
               >
                 {grading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checkingâ€¦
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking…
                   </>
                 ) : (
                   "Submit Answer"
