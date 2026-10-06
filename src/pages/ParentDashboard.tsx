@@ -190,7 +190,7 @@ export default function ParentDashboard() {
     if (parentCode) {
       await navigator.clipboard.writeText(parentCode);
       setCopiedCode(true);
-      toast.success("Parent code copied to clipboard!");
+      toast.success("Link code copied to clipboard!");
       setTimeout(() => setCopiedCode(false), 2000);
     }
   };
@@ -371,7 +371,7 @@ export default function ParentDashboard() {
             {parentCode && (
               <div className="mt-8 pt-6 border-t border-border max-w-sm w-full">
                 <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-1">Or link existing student account</p>
-                <p className="text-xs text-muted-foreground mb-3">Share this Parent Link Code with your child:</p>
+                <p className="text-xs text-muted-foreground mb-3">Share this Link Code with your child:</p>
                 <code className="block border border-dashed border-primary/30 bg-muted/50 px-3 py-3 text-center text-xl font-bold tracking-[0.25em] text-primary rounded-xl select-all">
                   {parentCode}
                 </code>
@@ -424,11 +424,11 @@ export default function ParentDashboard() {
             <div className="space-y-4 flex flex-col">
               <div className="flex items-center gap-2.5">
                 <div className="h-5 w-1 bg-primary rounded-full" />
-                <h3 className="text-lg sm:text-xl font-black text-foreground tracking-tight">Parent Link Code</h3>
+                <h3 className="text-lg sm:text-xl font-black text-foreground tracking-tight">Your Link Code</h3>
               </div>
               <div className="rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-sm flex flex-col justify-between flex-1">
                 <div>
-                  <h2 className="text-base sm:text-lg font-semibold text-foreground">Parent Link Code</h2>
+                  <h2 className="text-base sm:text-lg font-semibold text-foreground">Your Link Code</h2>
                   <p className="mt-1 text-xs text-muted-foreground">Share this code with your child to connect accounts</p>
                   {parentCode ? (
                     <>

@@ -664,7 +664,7 @@ export default function ParentSettingsPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -translate-y-8 translate-x-8" />
             <CardHeader className="pb-3 border-b border-border">
               <CardTitle className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-                Your Parent Link Code
+                Your Link Code
                 <span className="w-2 h-2 rounded-full bg-primary" />
               </CardTitle>
               <CardDescription className="text-muted-foreground text-xs sm:text-sm">
@@ -698,7 +698,7 @@ export default function ParentSettingsPage() {
             <CardContent className="space-y-4 pt-6">
               {children.length === 0 ? (
                 <div className="p-8 text-center bg-muted/20 border border-dashed border-border rounded-2xl text-muted-foreground font-medium text-sm">
-                  No children linked yet. Share your connection code to link their account.
+                  No children linked yet. Share your link code to connect their account.
                 </div>
               ) : (
                 <div className="space-y-3">

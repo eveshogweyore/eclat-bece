@@ -20,7 +20,6 @@ export const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDia
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [parentCode, setParentCode] = useState("");
-  const [schoolCode, setSchoolCode] = useState("");
   const [currentParentId, setCurrentParentId] = useState<string | null>(null);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState<string | null>(null);
@@ -135,64 +134,6 @@ export const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDia
     }
   };
 
-  const handleConnectSchool = async () => {
-    if (!schoolCode.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a school code",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Use the lookup_school_by_code function
-      const { data: schoolData, error: schoolError } = await supabase
-        .rpc("lookup_school_by_code", { _school_code: schoolCode.trim().toUpperCase() });
-
-      if (schoolError || !schoolData || schoolData.length === 0) {
-        toast({
-          title: "Error",
-          description: "Invalid school code. Please check and try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const school = schoolData[0];
-
-      // Update student with school_id
-      const { error: updateError } = await supabase
-        .from("students")
-        .update({ school_id: school.id })
-        .eq("user_id", user.id);
-
-      if (updateError) throw updateError;
-
-      setCurrentSchoolId(school.id);
-      setSchoolName(school.school_name);
-      setSchoolCode("");
-      
-      toast({
-        title: "Success",
-        description: `Successfully connected to ${school.school_name}!`,
-      });
-    } catch (error: unknown) {
-      console.error("Error connecting to school:", error);
-      toast({
-        title: "Error",
-        description: getToastDescription(error, "Failed to connect to school"),
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -255,46 +196,27 @@ export const AccountSettingsDialog = ({ open, onOpenChange }: AccountSettingsDia
             )}
           </div>
 
-          {/* School Connection */}
+          {/* School Connection — status only. Students cannot self-connect to
+              a school (the self-update guard blocks school_id changes); the
+              school links the student with the student's Link Code. */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-muted-foreground" />
               <h3 className="font-semibold">School Account</h3>
             </div>
-            
-            {currentSchoolId ? (
-              <div className="p-3 rounded-lg bg-muted">
+
+            <div className="p-3 rounded-lg bg-muted">
+              {currentSchoolId ? (
                 <p className="text-sm text-muted-foreground">
                   ✓ Connected to {schoolName || "school"}
                 </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="schoolCode">School Code</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="schoolCode"
-                    placeholder="Enter school code"
-                    value={schoolCode}
-                    onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
-                    maxLength={8}
-                  />
-                  <Button 
-                    onClick={handleConnectSchool}
-                    disabled={isSubmitting || !schoolCode.trim()}
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Connect"
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Ask your teacher for the school code
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Not linked to a school yet. Share your Link Code with your school — they can add
+                  you from their Students page.
                 </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>

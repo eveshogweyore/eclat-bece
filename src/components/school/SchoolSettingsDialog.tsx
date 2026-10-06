@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, Copy, Check, Loader2 } from "lucide-react";
+import { Building2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -28,7 +28,6 @@ export function SchoolSettingsDialog({ open, onOpenChange, school, onSuccess }: 
   const [contactEmail, setContactEmail] = useState("");
   const [address, setAddress] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (school) {
@@ -37,18 +36,6 @@ export function SchoolSettingsDialog({ open, onOpenChange, school, onSuccess }: 
       setAddress(school.address || "");
     }
   }, [school, open]);
-
-  const handleCopyCode = async () => {
-    if (!school?.school_code) return;
-    try {
-      await navigator.clipboard.writeText(school.school_code);
-      setCopied(true);
-      toast.success("School code copied to clipboard!");
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Failed to copy school code");
-    }
-  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,36 +82,12 @@ export function SchoolSettingsDialog({ open, onOpenChange, school, onSuccess }: 
             <DialogTitle className="text-xl">School Profile & Settings</DialogTitle>
           </div>
           <DialogDescription>
-            Manage your school details and connection code for student onboarding.
+            Manage your school details. Students join your school from the Students page using their
+            Link Code.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSave} className="space-y-4 py-2">
-          {/* School Code Badge */}
-          <div className="p-4 bg-muted/60 rounded-xl border border-border/60 space-y-2">
-            <Label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-              School Connection Code
-            </Label>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-2xl font-black text-primary font-mono tracking-widest">
-                {school?.school_code || "—"}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleCopyCode}
-                className="gap-1.5"
-              >
-                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copied" : "Copy Code"}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Students enter this code in their Account Settings to link their account to your school.
-            </p>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="school-name">School Name</Label>
             <Input

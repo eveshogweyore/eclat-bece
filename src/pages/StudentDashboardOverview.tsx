@@ -652,8 +652,8 @@ export default function StudentDashboardOverview() {
         </div>
 
         <div className="rounded-xl border border-border bg-card text-card-foreground p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-foreground">Parent Link Code</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Share this code with your parent or guardian</p>
+          <h2 className="text-lg font-semibold text-foreground">Link Code</h2>
+          <p className="mt-1 text-xs text-muted-foreground">Share this code with your parent, guardian or school</p>
           {studentCode ? (
             <>
               <code className="mt-5 block border border-dashed border-border bg-muted/60 px-3 py-4 text-center text-2xl font-bold tracking-[0.25em] text-primary rounded-xl font-mono select-all">

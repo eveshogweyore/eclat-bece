@@ -83,7 +83,7 @@ export default function StudentSettingsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="code">Student Code / ID</Label>
+              <Label htmlFor="code">Link Code</Label>
               <div className="flex items-center gap-2">
                 <Input id="code" value={uniqueId || "N/A"} disabled className="font-mono bg-muted/50" />
                 {uniqueId && <Badge variant="secondary">Active</Badge>}
