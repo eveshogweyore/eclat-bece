@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
-import { Users, Search, Plus, BookOpen, FileText, Trophy, Upload, Edit2 } from "lucide-react";
+import { Users, Search, Plus, BookOpen, FileText, Trophy, Upload, Edit2, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SchoolPageHeader } from "@/components/school/SchoolPageHeader";
 import { SchoolDataState } from "@/components/school/SchoolDataState";
 import { CreateStudentDialog } from "@/components/school/SchoolCreateDialogs";
 import { SchoolBulkStudentDialog } from "@/components/school/SchoolBulkStudentDialog";
+import { SchoolLinkStudentDialog } from "@/components/school/SchoolLinkStudentDialog";
 import { StudentReportDialog } from "@/components/StudentReportDialog";
 import { StudentEditDialog } from "@/components/school/StudentEditDialog";
 import { SchoolAssignPracticeDialog } from "@/components/school/SchoolAssignPracticeDialog";
@@ -14,6 +15,7 @@ import { useSchoolData, SchoolStudent } from "@/hooks/useSchoolData";
 export function SchoolStudentsPage() {
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -76,6 +78,14 @@ export function SchoolStudentsPage() {
         subtitle="Review active learners, diagnostic profiles, and performance records."
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setLinkDialogOpen(true)}
+              className="border-border bg-card text-foreground hover:bg-accent font-semibold text-xs sm:text-sm"
+            >
+              <Link2 className="mr-1.5 h-4 w-4" />
+              Link existing student
+            </Button>
             <Button
               variant="outline"
               onClick={() => setBulkDialogOpen(true)}
@@ -173,6 +183,14 @@ export function SchoolStudentsPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+              <Button
+                variant="outline"
+                onClick={() => setLinkDialogOpen(true)}
+                className="border-border bg-card text-foreground hover:bg-accent text-xs font-semibold"
+              >
+                <Link2 className="mr-1.5 h-3.5 w-3.5" />
+                Link Existing Student
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => setBulkDialogOpen(true)}
@@ -330,6 +348,13 @@ export function SchoolStudentsPage() {
         onOpenChange={setStudentDialogOpen}
         classes={classes}
         onCreated={() => refresh()}
+      />
+
+      {/* Link Existing Student Modal */}
+      <SchoolLinkStudentDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        onLinked={() => refresh()}
       />
 
       {/* Bulk Import CSV Modal */}

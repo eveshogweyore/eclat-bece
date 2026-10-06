@@ -1968,6 +1968,16 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      link_student_to_school: {
+        Args: { p_student_code: string }
+        Returns: {
+          class_year: string
+          full_name: string
+          parent_id: string
+          student_id: string
+          unique_id: string
+        }[]
+      }
       log_admin_action: {
         Args: {
           _action: string
@@ -2073,6 +2083,10 @@ export type Database = {
           p_time_spent_ms?: number
         }
         Returns: Json
+      }
+      unlink_student_from_school: {
+        Args: { p_student_id: string }
+        Returns: undefined
       }
       update_pinned_badges: {
         Args: { p_badge_ids: string[] }
