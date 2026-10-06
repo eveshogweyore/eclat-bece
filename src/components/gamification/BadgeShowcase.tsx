@@ -9,10 +9,10 @@ import { toast } from "sonner";
 
 interface BadgeShowcaseProps {
   earnedBadgeIds: string[];
-  // NULL entries are empty slots; positions are preserved so a pin stays in
-  // the slot it was given ("Slot 4" means slot 4).
-  pinnedBadgeIds: (string | null)[];
-  onUpdatePinnedBadges: (newPinnedIds: (string | null)[]) => Promise<void>;
+  // Pins are always left-packed sequentially (no interior gaps); the array
+  // length equals the number of filled slots.
+  pinnedBadgeIds: string[];
+  onUpdatePinnedBadges: (newPinnedIds: string[]) => Promise<void>;
   unlockedSlotsCount?: number;
   currentStreak?: number;
   completedQuizzesCount?: number;
@@ -42,17 +42,9 @@ export function BadgeShowcase({
     return { index: i, isUnlocked, badge };
   });
 
-  // Empty slots are stored as NULL entries so each pin keeps its position;
-  // only trailing empties are trimmed to keep the stored array tidy.
-  const trimTrailingEmptySlots = (ids: (string | null)[]) => {
-    const next = [...ids];
-    while (next.length > 0 && next[next.length - 1] == null) next.pop();
-    return next;
-  };
-
   const handleSlotClick = (index: number, isUnlocked: boolean, hasBadge: boolean) => {
     // Occupied slots stay clickable even when locked so legacy pins (from a
-    // higher-slot era or before level gating) can still be moved or cleared.
+    // higher-slot era or before earned-count gating) can be moved or cleared.
     if (!isUnlocked && !hasBadge) return;
     setSelectedSlotIndex(index);
     setDialogOpen(true);
@@ -60,17 +52,20 @@ export function BadgeShowcase({
 
   const handleSelectBadge = async (badgeId: string) => {
     if (selectedSlotIndex === null) return;
+    // Re-picking the badge already in this slot is a no-op.
+    if (pinnedBadgeIds[selectedSlotIndex] === badgeId) {
+      setDialogOpen(false);
+      return;
+    }
     setSaving(true);
     try {
-      const nextPinned = [...pinnedBadgeIds];
-      while (nextPinned.length < selectedSlotIndex) nextPinned.push(null);
-      // Pinning a badge that already sits in another slot moves it here.
-      const existingIndex = nextPinned.indexOf(badgeId);
-      if (existingIndex >= 0 && existingIndex !== selectedSlotIndex) {
-        nextPinned[existingIndex] = null;
-      }
-      nextPinned[selectedSlotIndex] = badgeId;
-      await onUpdatePinnedBadges(trimTrailingEmptySlots(nextPinned));
+      // Vacate the badge's old slot (move semantics), then either replace the
+      // clicked slot's badge or append at the first free position — appending
+      // keeps the showcase left-packed, so gaps can never form.
+      const nextPinned = pinnedBadgeIds.filter((id) => id !== badgeId);
+      if (selectedSlotIndex < nextPinned.length) nextPinned[selectedSlotIndex] = badgeId;
+      else nextPinned.push(badgeId);
+      await onUpdatePinnedBadges(nextPinned);
       setDialogOpen(false);
     } catch {
       // Failure already toasted and rolled back by the mutation handlers;
@@ -84,9 +79,10 @@ export function BadgeShowcase({
     if (selectedSlotIndex === null) return;
     setSaving(true);
     try {
+      // Splice shifts later badges left, preserving sequential order.
       const nextPinned = [...pinnedBadgeIds];
-      nextPinned[selectedSlotIndex] = null;
-      await onUpdatePinnedBadges(trimTrailingEmptySlots(nextPinned));
+      nextPinned.splice(selectedSlotIndex, 1);
+      await onUpdatePinnedBadges(nextPinned);
       setDialogOpen(false);
     } catch {
       // Failure already toasted and rolled back by the mutation handlers;
@@ -99,19 +95,14 @@ export function BadgeShowcase({
   const handleTogglePinBadge = async (badgeId: string) => {
     try {
       if (pinnedBadgeIds.includes(badgeId)) {
-        const nextPinned = pinnedBadgeIds.map((id) => (id === badgeId ? null : id));
-        await onUpdatePinnedBadges(trimTrailingEmptySlots(nextPinned));
+        await onUpdatePinnedBadges(pinnedBadgeIds.filter((id) => id !== badgeId));
       } else {
-        const pinnedCount = pinnedBadgeIds.filter((id) => id != null).length;
-        if (pinnedCount >= unlockedSlotsCount) {
+        if (pinnedBadgeIds.length >= unlockedSlotsCount) {
           toast.error(`Showcase is full (${unlockedSlotsCount} slots max). Unpin a badge first!`);
           return;
         }
-        const nextPinned = [...pinnedBadgeIds];
-        const freeIndex = nextPinned.findIndex((id) => id == null);
-        if (freeIndex >= 0) nextPinned[freeIndex] = badgeId;
-        else nextPinned.push(badgeId);
-        await onUpdatePinnedBadges(nextPinned);
+        // Compact arrays mean appending lands in the first free slot.
+        await onUpdatePinnedBadges([...pinnedBadgeIds, badgeId]);
       }
     } catch {
       // Failure already toasted and rolled back by the mutation handlers.
@@ -185,7 +176,7 @@ export function BadgeShowcase({
               Select a Badge to Pin
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Choose from your unlocked badges for Slot {(selectedSlotIndex ?? 0) + 1}
+              Choose from your unlocked badges for Slot {Math.min(selectedSlotIndex ?? 0, pinnedBadgeIds.length) + 1}
             </DialogDescription>
           </DialogHeader>
 

@@ -117,6 +117,9 @@ export default function StudentDashboardOverview() {
       ]);
 
       const gameProfile = gameProfileRes.data;
+      // An empty badge list is indistinguishable from a failed read; surface
+      // the error so React Query retries instead of rendering "0 badges".
+      if (badgesRes.error) throw badgesRes.error;
       let currentStreak = 0;
       let dailyChallengeCompleted = false;
 
@@ -165,7 +168,11 @@ export default function StudentDashboardOverview() {
       const levelInfo = calculateStudentLevel(Number(gameProfile?.lifetime_ep || 0));
       const streakShields = Number(gameProfile?.streak_shields || 0);
       const currentLeagueTier = Number(gameProfile?.current_league_tier || 1);
-      const pinnedBadgeIds = (gameProfile?.pinned_badge_ids as (string | null)[]) || [];
+      // Left-pack defensively: any NULL gap entries (from the old gap model)
+      // collapse so pins are always sequential.
+      const pinnedBadgeIds = ((gameProfile?.pinned_badge_ids as (string | null)[]) ?? []).filter(
+        (id): id is string => Boolean(id)
+      );
       const earnedBadgeIds = (badgesRes.data || []).map((b) => b.badge_id);
       const focusTopic = weakTopicsRes.data?.[0] ?? null;
       const pendingAssignmentsCount = pendingRes.count ?? 0;
@@ -262,16 +269,14 @@ export default function StudentDashboardOverview() {
   const badges = stats?.badges ?? [];
 
   // Pinned badges are editable locally; seeded from the cached stats query.
-  // NULL entries are empty showcase slots (positions preserved).
-  const [pinnedBadgeIds, setPinnedBadgeIds] = useState<(string | null)[]>([]);
+  const [pinnedBadgeIds, setPinnedBadgeIds] = useState<string[]>([]);
   useEffect(() => {
     if (stats?.pinnedBadgeIds) setPinnedBadgeIds(stats.pinnedBadgeIds);
   }, [stats?.pinnedBadgeIds]);
 
-  // Level-gated showcase slots (levelEngine milestones: slot #1 at level 3,
-  // slot #2 at level 5, full 5-slot showcase at level 10).
-  const unlockedSlotsCount =
-    levelInfo.level >= 10 ? 5 : levelInfo.level >= 5 ? 2 : levelInfo.level >= 3 ? 1 : 0;
+  // Showcase slots follow earned badges: one slot per earned badge, capped
+  // at the five showcase slots (replaces the old level-milestone gating).
+  const unlockedSlotsCount = Math.min(5, earnedBadgeIds.length);
 
 
   const featureCards = [
@@ -335,11 +340,11 @@ export default function StudentDashboardOverview() {
   };
 
   const pinBadgesMutation = useMutation({
-    mutationFn: async (newPinnedIds: (string | null)[]) => {
+    mutationFn: async (newPinnedIds: string[]) => {
       // Scoped RPC — the gamification profile is no longer client-writable.
-      // NULL entries are empty slots; the SQL text[] keeps slot positions.
+      // The RPC left-packs and validates: compact, deduped, earned-only.
       const { error } = await supabase.rpc("update_pinned_badges", {
-        p_badge_ids: newPinnedIds as string[],
+        p_badge_ids: newPinnedIds,
       });
       if (error) throw error;
       return newPinnedIds;
@@ -362,7 +367,7 @@ export default function StudentDashboardOverview() {
 
   // Rejects on RPC failure so dialog/gallery callers can keep their UI state;
   // the toast and optimistic rollback live in the mutation handlers above.
-  const handleUpdatePinnedBadges = (newPinnedIds: (string | null)[]) => {
+  const handleUpdatePinnedBadges = (newPinnedIds: string[]) => {
     if (!studentId) return Promise.resolve();
     return pinBadgesMutation.mutateAsync(newPinnedIds).then(() => undefined);
   };
